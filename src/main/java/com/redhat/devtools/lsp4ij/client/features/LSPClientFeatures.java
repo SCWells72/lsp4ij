@@ -61,6 +61,8 @@ public class LSPClientFeatures implements Disposable {
 
     private LSPFormattingFeature formattingFeature;
 
+    private LSPDocumentOnTypeFormattingFeature documentOnTypeFormattingFeature;
+
     private LSPHoverFeature hoverFeature;
 
     private LSPImplementationFeature implementationFeature;
@@ -603,6 +605,38 @@ public class LSPClientFeatures implements Disposable {
     }
 
     /**
+     * Returns the LSP on-type formatting feature.
+     *
+     * @return the LSP on-type formatting feature.
+     */
+    @NotNull
+    public final LSPDocumentOnTypeFormattingFeature getDocumentOnTypeFormattingFeature() {
+        if (documentOnTypeFormattingFeature == null) {
+            initDocumentOnTypeFormattingFeature();
+        }
+        return documentOnTypeFormattingFeature;
+    }
+
+    private synchronized void initDocumentOnTypeFormattingFeature() {
+        if (documentOnTypeFormattingFeature != null) {
+            return;
+        }
+        setDocumentOnTypeFormattingFeature(new LSPDocumentOnTypeFormattingFeature());
+    }
+
+    /**
+     * Initialize the LSP on-type formatting feature.
+     *
+     * @param onTypeFormattingFeature the LSP on-type formatting feature.
+     * @return the LSP client features.
+     */
+    public final LSPClientFeatures setDocumentOnTypeFormattingFeature(@NotNull LSPDocumentOnTypeFormattingFeature onTypeFormattingFeature) {
+        onTypeFormattingFeature.setClientFeatures(this);
+        this.documentOnTypeFormattingFeature = onTypeFormattingFeature;
+        return this;
+    }
+
+    /**
      * Returns the LSP hover feature.
      *
      * @return the LSP hover feature.
@@ -1028,6 +1062,9 @@ public class LSPClientFeatures implements Disposable {
         if (formattingFeature != null) {
             formattingFeature.dispose();
         }
+        if (documentOnTypeFormattingFeature != null) {
+            documentOnTypeFormattingFeature.dispose();
+        }
         if (hoverFeature != null) {
             hoverFeature.dispose();
         }
@@ -1102,6 +1139,9 @@ public class LSPClientFeatures implements Disposable {
         }
         if (formattingFeature != null) {
             formattingFeature.setServerCapabilities(serverCapabilities);
+        }
+        if (documentOnTypeFormattingFeature != null) {
+            documentOnTypeFormattingFeature.setServerCapabilities(serverCapabilities);
         }
         if (hoverFeature != null) {
             hoverFeature.setServerCapabilities(serverCapabilities);
@@ -1183,6 +1223,9 @@ public class LSPClientFeatures implements Disposable {
             // register 'textDocument/rangeFormatting' capability
             case LSPRequestConstants.TEXT_DOCUMENT_RANGE_FORMATTING ->
                     getFormattingFeature().getRangeFormattingCapabilityRegistry();
+            // register 'textDocument/onTypeFormatting' capability
+            case LSPRequestConstants.TEXT_DOCUMENT_ON_TYPE_FORMATTING ->
+                    getDocumentOnTypeFormattingFeature().getDocumentOnTypeFormattingCapabilityRegistry();
             // register 'textDocument/hover' capability
             case LSPRequestConstants.TEXT_DOCUMENT_HOVER -> getHoverFeature().getHoverCapabilityRegistry();
             // register 'textDocument/implementation' capability

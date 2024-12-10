@@ -26,6 +26,7 @@ import com.redhat.devtools.lsp4ij.features.documentLink.LSPDocumentLinkSupport;
 import com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolSupport;
 import com.redhat.devtools.lsp4ij.features.documentation.LSPHoverSupport;
 import com.redhat.devtools.lsp4ij.features.foldingRange.LSPFoldingRangeSupport;
+import com.redhat.devtools.lsp4ij.features.formatting.LSPDocumentOnTypeFormattingSupport;
 import com.redhat.devtools.lsp4ij.features.formatting.LSPFormattingSupport;
 import com.redhat.devtools.lsp4ij.features.highlight.LSPHighlightSupport;
 import com.redhat.devtools.lsp4ij.features.implementation.LSPImplementationSupport;
@@ -65,6 +66,8 @@ public class LSPFileSupport extends UserDataHolderBase implements Disposable {
     private final LSPSelectionRangeSupport selectionRangeSupport;
 
     private final LSPFormattingSupport formattingSupport;
+
+    private final LSPDocumentOnTypeFormattingSupport documentOnTypeFormattingSupport;
 
     private final LSPHighlightSupport highlightSupport;
 
@@ -112,6 +115,7 @@ public class LSPFileSupport extends UserDataHolderBase implements Disposable {
         this.foldingRangeSupport = new LSPFoldingRangeSupport(file);
         this.selectionRangeSupport = new LSPSelectionRangeSupport(file);
         this.formattingSupport = new LSPFormattingSupport(file);
+        this.documentOnTypeFormattingSupport = new LSPDocumentOnTypeFormattingSupport(file);
         this.highlightSupport = new LSPHighlightSupport(file);
         this.signatureHelpSupport = new LSPSignatureHelpSupport(file);
         this.documentLinkSupport = new LSPDocumentLinkSupport(file);
@@ -227,6 +231,15 @@ public class LSPFileSupport extends UserDataHolderBase implements Disposable {
      */
     public LSPFormattingSupport getFormattingSupport() {
         return formattingSupport;
+    }
+
+    /**
+     * Returns the LSP document on-type formatting support.
+     *
+     * @return the LSP document on-type formatting support.
+     */
+    public LSPDocumentOnTypeFormattingSupport getDocumentOnTypeFormattingSupport() {
+        return documentOnTypeFormattingSupport;
     }
 
     /**

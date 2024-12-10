@@ -160,7 +160,6 @@ public class MyLSPCodeLensFeature extends LSPCodeLensFeature {
         var serverStatus = super.getServerStatus();
         return serverStatus == ServerStatus.starting || serverStatus == ServerStatus.started;
     }
-
 }
 ```
 
@@ -375,6 +374,8 @@ public class MyLSPDocumentSymbolFeature extends LSPDocumentSymbolFeature {
 | boolean isSupported(PsiFile file) | Returns `true` if the LSP feature is supported for the given file and `false` otherwise. <br/>This supported state is called after starting the language server, which matches the file and user with the LSP server capabilities. | Check the server capability |
 
 ## LSP Formatting Feature
+
+**TODO:** Talk about `textDocument/onTypeFormatting` here when implemented.
 
 | API                                                   | Description                                                                                                                                                                                                                        | Default Behaviour           |
 |-------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|
