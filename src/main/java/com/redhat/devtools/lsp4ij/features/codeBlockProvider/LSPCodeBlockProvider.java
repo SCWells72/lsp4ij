@@ -20,12 +20,13 @@ import com.intellij.util.containers.ContainerUtil;
 import com.redhat.devtools.lsp4ij.features.foldingRange.LSPFoldingRangeBuilder;
 import com.redhat.devtools.lsp4ij.features.selectionRange.LSPSelectionRangeSupport;
 import org.eclipse.lsp4j.FoldingRange;
-import org.eclipse.lsp4j.SelectionRange;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * Code block provider that uses information from {@link LSPSelectionRangeSupport} and {@link LSPFoldingRangeBuilder}.
@@ -116,25 +117,14 @@ public class LSPCodeBlockProvider implements CodeBlockProvider {
                                                      @Nullable Character closeBraceChar,
                                                      int closeBraceOffset) {
         Document document = editor.getDocument();
-        List<SelectionRange> selectionRanges = LSPSelectionRangeSupport.getSelectionRanges(file, document, offset);
-        if (!ContainerUtil.isEmpty(selectionRanges)) {
-            // Convert the selection ranges into text ranges
-            Set<TextRange> textRanges = new LinkedHashSet<>(selectionRanges.size());
-            for (SelectionRange selectionRange : selectionRanges) {
-                textRanges.add(LSPSelectionRangeSupport.getTextRange(selectionRange, document));
-                for (SelectionRange parentSelectionRange = selectionRange.getParent();
-                     parentSelectionRange != null;
-                     parentSelectionRange = parentSelectionRange.getParent()) {
-                    textRanges.add(LSPSelectionRangeSupport.getTextRange(parentSelectionRange, document));
-                }
-            }
-
+        List<TextRange> selectionTextRanges = LSPSelectionRangeSupport.getSelectionTextRanges(file, editor, offset);
+        if (!ContainerUtil.isEmpty(selectionTextRanges)) {
             CharSequence documentChars = document.getCharsSequence();
             int documentLength = documentChars.length();
 
             // Find containing text ranges that are bounded by brace pairs
-            List<TextRange> containingTextRanges = new ArrayList<>(textRanges.size());
-            for (TextRange textRange : textRanges) {
+            List<TextRange> containingTextRanges = new ArrayList<>(selectionTextRanges.size());
+            for (TextRange textRange : selectionTextRanges) {
                 if (textRange.getLength() > 1) {
                     int startOffset = textRange.getStartOffset();
                     int endOffset = textRange.getEndOffset();
