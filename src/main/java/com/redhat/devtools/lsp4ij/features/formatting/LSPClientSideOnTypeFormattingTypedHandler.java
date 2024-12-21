@@ -129,6 +129,14 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
                     }
             );
 
+            // If none was found, find the closest selection range that includes the terminator that was just typed
+            if (statementSelectionTextRange == null) {
+                statementSelectionTextRange = ContainerUtil.find(
+                        selectionTextRanges,
+                        selectionTextRange -> selectionTextRange.containsOffset(offset)
+                );
+            }
+
             // If we found the statement text range, format it
             if (statementSelectionTextRange != null) {
                 int startOffset = statementSelectionTextRange.getStartOffset();
