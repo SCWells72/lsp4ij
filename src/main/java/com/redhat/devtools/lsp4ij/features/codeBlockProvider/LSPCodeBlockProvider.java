@@ -21,6 +21,7 @@ import com.redhat.devtools.lsp4ij.features.foldingRange.LSPFoldingRangeBuilder;
 import com.redhat.devtools.lsp4ij.features.selectionRange.LSPSelectionRangeSupport;
 import org.eclipse.lsp4j.FoldingRange;
 import org.eclipse.lsp4j.SelectionRange;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,12 +35,24 @@ public class LSPCodeBlockProvider implements CodeBlockProvider {
     @Override
     @Nullable
     public TextRange getCodeBlockRange(Editor editor, PsiFile file) {
+        if ((editor == null) || (file == null)) {
+            return null;
+        }
+
+        int offset = editor.getCaretModel().getOffset();
+        return getCodeBlockRange(editor, file, offset);
+    }
+
+    @Nullable
+    @ApiStatus.Internal
+    public static TextRange getCodeBlockRange(@NotNull Editor editor,
+                                              @NotNull PsiFile file,
+                                              int offset) {
         Document document = editor.getDocument();
         CharSequence documentChars = document.getCharsSequence();
         int documentLength = documentChars.length();
 
         // Adjust the offset slightly based on before/after brace to ensure evaluation occurs "within" the braced block
-        int offset = editor.getCaretModel().getOffset();
         Character beforeCharacter = offset > 0 ? documentChars.charAt(offset - 1) : null;
         Character afterCharacter = offset < documentLength ? documentChars.charAt(offset) : null;
         if (LSPCodeBlockUtils.isCodeBlockStartChar(file, afterCharacter)) {
@@ -95,13 +108,13 @@ public class LSPCodeBlockProvider implements CodeBlockProvider {
     }
 
     @Nullable
-    private TextRange getUsingSelectionRanges(@NotNull PsiFile file,
-                                              @NotNull Editor editor,
-                                              int offset,
-                                              @Nullable Character openBraceChar,
-                                              int openBraceOffset,
-                                              @Nullable Character closeBraceChar,
-                                              int closeBraceOffset) {
+    private static TextRange getUsingSelectionRanges(@NotNull PsiFile file,
+                                                     @NotNull Editor editor,
+                                                     int offset,
+                                                     @Nullable Character openBraceChar,
+                                                     int openBraceOffset,
+                                                     @Nullable Character closeBraceChar,
+                                                     int closeBraceOffset) {
         Document document = editor.getDocument();
         List<SelectionRange> selectionRanges = LSPSelectionRangeSupport.getSelectionRanges(file, document, offset);
         if (!ContainerUtil.isEmpty(selectionRanges)) {
