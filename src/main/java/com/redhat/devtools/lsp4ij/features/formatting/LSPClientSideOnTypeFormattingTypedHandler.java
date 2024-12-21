@@ -24,11 +24,13 @@ import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.util.containers.ContainerUtil;
 import com.redhat.devtools.lsp4ij.LanguageServiceAccessor;
 import com.redhat.devtools.lsp4ij.features.codeBlockProvider.LSPCodeBlockProvider;
+import com.redhat.devtools.lsp4ij.features.codeBlockProvider.LSPCodeBlockUtils;
 import com.redhat.devtools.lsp4ij.features.completion.LSPTypedHandlerDelegate;
 import com.redhat.devtools.lsp4ij.features.selectionRange.LSPSelectionRangeSupport;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Typed handler for LSP4IJ-managed files that performs automatic on-type formatting for specific keystrokes.
@@ -46,17 +48,29 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
                 virtualFile,
                 ls -> ls.getClientFeatures().getFormattingFeature().isSupported(file))
         ) {
+            // Close braces
             // Respect the IDE-wide setting
             // TODO: Should this be client config instead/also?
-            if (CodeInsightSettings.getInstance().REFORMAT_BLOCK_ON_RBRACE && (c == '}')) {
-                return handleCloseBraceTyped(project, editor, file);
+            if (CodeInsightSettings.getInstance().REFORMAT_BLOCK_ON_RBRACE) {
+                Map.Entry<Character, Character> bracePair = ContainerUtil.find(
+                        LSPCodeBlockUtils.getBracePairs(file).entrySet(),
+                        entry -> entry.getValue() == c
+                );
+                if (bracePair != null) {
+                    return handleCloseBraceTyped(project, editor, file, bracePair.getKey(), bracePair.getValue());
+                }
             }
-            // TODO: Need client config for whether or not this should be enabled?
-            else if (c == ';') {
+
+            // Statement terminators
+            // TODO: Need client config for whether or not this should be enabled? Also which exact characters are
+            //  considered statement terminators in the language
+            if (c == ';') {
                 return handleStatementTerminatorTyped(project, editor, file);
             }
+
+            // Completion triggers
             // TODO: Need client config for whether or not this should be enabled?
-            else if (LSPTypedHandlerDelegate.hasLanguageServerSupportingCompletionTriggerCharacters(c, project, file)) {
+            if (LSPTypedHandlerDelegate.hasLanguageServerSupportingCompletionTriggerCharacters(c, project, file)) {
                 return handleCompletionTriggerTyped(project, editor, file);
             }
         }
@@ -67,7 +81,9 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
     @NotNull
     private static Result handleCloseBraceTyped(@NotNull Project project,
                                                 @NotNull Editor editor,
-                                                @NotNull PsiFile file) {
+                                                @NotNull PsiFile file,
+                                                char openBraceChar,
+                                                char closeBraceChar) {
         // Find the code block that was closed by the brace
         int offset = editor.getCaretModel().getOffset();
         int beforeOffset = offset - 1;
@@ -79,15 +95,15 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
             // Make sure the range includes the brace pair
             Document document = editor.getDocument();
             CharSequence documentChars = document.getCharsSequence();
-            if ((startOffset > 0) && (documentChars.charAt(startOffset) != '{')) {
+            if ((startOffset > 0) && (documentChars.charAt(startOffset) != openBraceChar)) {
                 startOffset--;
             }
-            if ((endOffset < (documentChars.length() - 1)) && (documentChars.charAt(endOffset) != '}')) {
+            if ((endOffset < (documentChars.length() - 1)) && (documentChars.charAt(endOffset) != closeBraceChar)) {
                 endOffset++;
             }
 
             // If the range is now the braced block, format it
-            if ((documentChars.charAt(startOffset) == '{') && (documentChars.charAt(endOffset) == '}')) {
+            if ((documentChars.charAt(startOffset) == openBraceChar) && (documentChars.charAt(endOffset) == closeBraceChar)) {
                 CodeStyleManager.getInstance(project).reformatText(file, startOffset, endOffset);
                 return Result.STOP;
             }
