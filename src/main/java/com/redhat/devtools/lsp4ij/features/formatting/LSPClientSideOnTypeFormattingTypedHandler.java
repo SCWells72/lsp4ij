@@ -24,6 +24,7 @@ import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.util.containers.ContainerUtil;
 import com.redhat.devtools.lsp4ij.LanguageServiceAccessor;
 import com.redhat.devtools.lsp4ij.features.codeBlockProvider.LSPCodeBlockProvider;
+import com.redhat.devtools.lsp4ij.features.completion.LSPTypedHandlerDelegate;
 import com.redhat.devtools.lsp4ij.features.selectionRange.LSPSelectionRangeSupport;
 import org.jetbrains.annotations.NotNull;
 
@@ -53,6 +54,10 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
             // TODO: Need client config for whether or not this should be enabled?
             else if (c == ';') {
                 return handleStatementTerminatorTyped(project, editor, file);
+            }
+            // TODO: Need client config for whether or not this should be enabled?
+            else if (LSPTypedHandlerDelegate.hasLanguageServerSupportingCompletionTriggerCharacters(c, project, file)) {
+                return handleCompletionTriggerTyped(project, editor, file);
             }
         }
 
@@ -147,5 +152,17 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
         }
 
         return Result.CONTINUE;
+    }
+
+    @NotNull
+    private static Result handleCompletionTriggerTyped(@NotNull Project project,
+                                                       @NotNull Editor editor,
+                                                       @NotNull PsiFile file) {
+        // Just format the completion trigger
+        int offset = editor.getCaretModel().getOffset();
+        // TODO: We don't know the length of the completion trigger, but this seems to do the right thing
+        int beforeOffset = offset - 1;
+        CodeStyleManager.getInstance(project).reformatText(file, beforeOffset, offset);
+        return Result.STOP;
     }
 }
