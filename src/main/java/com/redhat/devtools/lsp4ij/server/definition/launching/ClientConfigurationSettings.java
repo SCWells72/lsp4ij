@@ -47,8 +47,8 @@ public class ClientConfigurationSettings {
         public boolean formatOnCloseBrace = false;
 
         /**
-         * The specific close brace characters that should trigger a format. Defaults to the language's close brace
-         * characters.
+         * The specific close brace characters that should trigger on-type formatting. Defaults to the language's close
+         * brace characters.
          */
         public String formatOnCloseBraceCharacters = null;
 
@@ -64,7 +64,32 @@ public class ClientConfigurationSettings {
          * Whether or not to degrade gracefully to the entire file if a more constrained scope cannot be found when
          * formatting on close brace. Defaults to false.
          */
-        public boolean formatOnCloseBraceDegradeToFile = false;
+        public boolean formatOnCloseBraceDegradeGracefully = false;
+
+        /**
+         * Whether or not to format on statement terminator. Defaults to false.
+         */
+        public boolean formatOnStatementTerminator = false;
+
+        /**
+         * The specific statement terminator characters that should trigger on-type formatting.
+         */
+        public String formatOnStatementTerminatorCharacters = null;
+
+        /**
+         * The scope that should be formatted when a statement terminator is typed. Allowed values are
+         * {@link ClientConfigurationFormatScope#STATEMENT STATEMENT},
+         * {@link ClientConfigurationFormatScope#CODE_BLOCK CODE_BLOCK}, and
+         * {@link ClientConfigurationFormatScope#FILE FILE}. Defaults to
+         * {@link ClientConfigurationFormatScope#STATEMENT STATEMENT}.
+         */
+        public ClientConfigurationFormatScope formatOnStatementTerminatorScope = ClientConfigurationFormatScope.STATEMENT;
+
+        /**
+         * Whether or not to degrade gracefully to the code block or entire file if a more constrained scope cannot be
+         * found when formatting on statement terminator. Defaults to false.
+         */
+        public boolean formatOnStatementTerminatorDegradeGracefully = false;
     }
 
     /**
