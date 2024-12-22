@@ -22,15 +22,12 @@ import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.util.containers.ContainerUtil;
 import com.redhat.devtools.lsp4ij.LanguageServerWrapper;
 import com.redhat.devtools.lsp4ij.LanguageServiceAccessor;
+import com.redhat.devtools.lsp4ij.client.features.LSPFormattingFeature;
+import com.redhat.devtools.lsp4ij.client.features.LSPFormattingFeature.FormattingScope;
 import com.redhat.devtools.lsp4ij.features.codeBlockProvider.LSPCodeBlockProvider;
 import com.redhat.devtools.lsp4ij.features.codeBlockProvider.LSPCodeBlockUtils;
 import com.redhat.devtools.lsp4ij.features.completion.LSPTypedHandlerDelegate;
 import com.redhat.devtools.lsp4ij.features.selectionRange.LSPSelectionRangeSupport;
-import com.redhat.devtools.lsp4ij.server.definition.LanguageServerDefinition;
-import com.redhat.devtools.lsp4ij.server.definition.launching.ClientConfigurationSettings;
-import com.redhat.devtools.lsp4ij.server.definition.launching.ClientConfigurationSettings.ClientConfigurationFormatSettings;
-import com.redhat.devtools.lsp4ij.server.definition.launching.ClientConfigurationSettings.ClientConfigurationFormatSettings.ClientConfigurationFormatScope;
-import com.redhat.devtools.lsp4ij.server.definition.launching.UserDefinedLanguageServerDefinition;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,26 +47,25 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
                             @NotNull Project project,
                             @NotNull Editor editor,
                             @NotNull PsiFile file) {
-        ClientConfigurationSettings clientConfigurationSettings = getClientConfigurationSettings(file);
-        if (clientConfigurationSettings != null) {
-            ClientConfigurationFormatSettings formatSettings = clientConfigurationSettings.format;
-
+        LSPFormattingFeature formattingFeature = getClientConfigurationSettings(file);
+        if (formattingFeature != null) {
             // Close braces
-            if (formatSettings.formatOnCloseBrace) {
+            if (formattingFeature.isFormatOnCloseBrace(file)) {
                 Map.Entry<Character, Character> bracePair = ContainerUtil.find(
                         LSPCodeBlockUtils.getBracePairs(file).entrySet(),
                         entry -> entry.getValue() == charTyped
                 );
                 if (bracePair != null) {
+                    String formatOnCloseBraceCharacters = formattingFeature.getFormatOnCloseBraceCharacters(file);
                     Character openBraceChar = bracePair.getKey();
                     Character closeBraceChar = bracePair.getValue();
-                    if (StringUtil.isEmpty(formatSettings.formatOnCloseBraceCharacters) ||
-                        (formatSettings.formatOnCloseBraceCharacters.indexOf(closeBraceChar) > -1)) {
+                    if (StringUtil.isEmpty(formatOnCloseBraceCharacters) ||
+                        (formatOnCloseBraceCharacters.indexOf(closeBraceChar) > -1)) {
                         return handleCloseBraceTyped(
                                 project,
                                 editor,
                                 file,
-                                formatSettings,
+                                formattingFeature,
                                 openBraceChar,
                                 closeBraceChar
                         );
@@ -78,20 +74,34 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
             }
 
             // Statement terminators
-            if (formatSettings.formatOnStatementTerminator &&
-                StringUtil.isNotEmpty(formatSettings.formatOnStatementTerminatorCharacters) &&
-                (formatSettings.formatOnStatementTerminatorCharacters.indexOf(charTyped) > -1)) {
-                return handleStatementTerminatorTyped(project, editor, file, formatSettings, charTyped);
+            if (formattingFeature.isFormatOnStatementTerminator(file)) {
+                String formatOnStatementTerminatorCharacters = formattingFeature.getFormatOnStatementTerminatorCharacters(file);
+                if (StringUtil.isNotEmpty(formatOnStatementTerminatorCharacters) &&
+                    (formatOnStatementTerminatorCharacters.indexOf(charTyped) > -1)) {
+                    return handleStatementTerminatorTyped(
+                            project,
+                            editor,
+                            file,
+                            formattingFeature,
+                            charTyped
+                    );
+                }
             }
 
             // Completion triggers
-            if (formatSettings.formatOnCompletionTrigger &&
+            if (formattingFeature.isFormatOnCompletionTrigger(file) &&
                 // It must be a completion trigger character for the language no matter what
-                LSPTypedHandlerDelegate.hasLanguageServerSupportingCompletionTriggerCharacters(charTyped, project, file) &&
+                LSPTypedHandlerDelegate.hasLanguageServerSupportingCompletionTriggerCharacters(charTyped, project, file)) {
                 // But the subset that should trigger completion can be configured
-                (StringUtil.isEmpty(formatSettings.formatOnCompletionTriggerCharacters) ||
-                 (formatSettings.formatOnCompletionTriggerCharacters.indexOf(charTyped) > -1))) {
-                return handleCompletionTriggerTyped(project, editor, file);
+                String formatOnCompletionTriggerCharacters = formattingFeature.getFormatOnCompletionTriggerCharacters(file);
+                if (StringUtil.isEmpty(formatOnCompletionTriggerCharacters) ||
+                    (formatOnCompletionTriggerCharacters.indexOf(charTyped) > -1)) {
+                    return handleCompletionTriggerTyped(
+                            project,
+                            editor,
+                            file
+                    );
+                }
             }
         }
 
@@ -99,17 +109,14 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
     }
 
     @Nullable
-    private static ClientConfigurationSettings getClientConfigurationSettings(@NotNull PsiFile file) {
+    private static LSPFormattingFeature getClientConfigurationSettings(@NotNull PsiFile file) {
         Project project = file.getProject();
         // Client-side on-type formatting shouldn't trigger a language server to start
         Set<LanguageServerWrapper> startedLanguageServers = LanguageServiceAccessor.getInstance(project).getStartedServers();
         for (LanguageServerWrapper startedLanguageServer : startedLanguageServers) {
             if (startedLanguageServer.getClientFeatures().getFormattingFeature().isSupported(file)) {
-                LanguageServerDefinition serverDefinition = startedLanguageServer.getServerDefinition();
-                if (serverDefinition instanceof UserDefinedLanguageServerDefinition languageServerDefinition) {
-                    // TODO: This returns the first match. Is that okay?
-                    return languageServerDefinition.getLanguageServerClientConfiguration();
-                }
+                // TODO: This returns the first match. Is that okay?
+                return startedLanguageServer.getClientFeatures().getFormattingFeature();
             }
         }
         return null;
@@ -119,18 +126,19 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
     private static Result handleCloseBraceTyped(@NotNull Project project,
                                                 @NotNull Editor editor,
                                                 @NotNull PsiFile file,
-                                                @NotNull ClientConfigurationFormatSettings formatSettings,
+                                                @NotNull LSPFormattingFeature formattingFeature,
                                                 char openBraceChar,
                                                 char closeBraceChar) {
         TextRange formatTextRange = null;
 
         // Statement-level scope is not supported for code blocks
-        if (formatSettings.formatOnCloseBraceScope == ClientConfigurationFormatScope.STATEMENT) {
+        FormattingScope formattingScope = formattingFeature.getFormatOnCloseBraceScope(file);
+        if (formattingScope == FormattingScope.STATEMENT) {
             return Result.CONTINUE;
         }
 
         // If appropriate, find the code block that was closed by the brace
-        if (formatSettings.formatOnCloseBraceScope == ClientConfigurationFormatScope.CODE_BLOCK) {
+        if (formattingScope == FormattingScope.CODE_BLOCK) {
             int offset = editor.getCaretModel().getOffset();
             int beforeOffset = offset - 1;
             TextRange codeBlockRange = LSPCodeBlockProvider.getCodeBlockRange(editor, file, beforeOffset);
@@ -156,8 +164,9 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
         }
 
         // If appropriate, use the file text range
-        if ((formatSettings.formatOnCloseBraceScope == ClientConfigurationFormatScope.FILE) ||
-            ((formatTextRange == null) && formatSettings.formatOnCloseBraceDegradeGracefully)) {
+        boolean degradeGracefully = formattingFeature.isFormatOnCloseBraceDegradeGracefully(file);
+        if ((formattingScope == FormattingScope.FILE) ||
+            ((formatTextRange == null) && degradeGracefully)) {
             formatTextRange = file.getTextRange();
         }
 
@@ -174,7 +183,7 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
     private static Result handleStatementTerminatorTyped(@NotNull Project project,
                                                          @NotNull Editor editor,
                                                          @NotNull PsiFile file,
-                                                         @NotNull ClientConfigurationFormatSettings formatSettings,
+                                                         @NotNull LSPFormattingFeature formattingFeature,
                                                          char statementTerminatorChar) {
         TextRange formatTextRange = null;
 
@@ -182,7 +191,8 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
         int beforeOffset = offset - 1;
 
         // If appropriate, find the statement that was just terminated
-        if (formatSettings.formatOnStatementTerminatorScope == ClientConfigurationFormatScope.STATEMENT) {
+        FormattingScope formattingScope = formattingFeature.getFormatOnStatementTerminatorScope(file);
+        if (formattingScope == FormattingScope.STATEMENT) {
             List<TextRange> selectionTextRanges = LSPSelectionRangeSupport.getSelectionTextRanges(file, editor, beforeOffset);
             if (!ContainerUtil.isEmpty(selectionTextRanges)) {
                 // Find the closest selection range that is extended to line start/end; that should be the statement
@@ -219,14 +229,15 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
         }
 
         // If appropriate, find the enclosing code block to format
-        if ((formatSettings.formatOnStatementTerminatorScope == ClientConfigurationFormatScope.CODE_BLOCK) ||
-            ((formatTextRange == null) && formatSettings.formatOnStatementTerminatorDegradeGracefully)) {
+        boolean degradeGracefully = formattingFeature.isFormatOnStatementTerminatorDegradeGracefully(file);
+        if ((formattingScope == FormattingScope.CODE_BLOCK) ||
+            ((formatTextRange == null) && degradeGracefully)) {
             formatTextRange = LSPCodeBlockProvider.getCodeBlockRange(editor, file, beforeOffset);
         }
 
         // If appropriate, use the file text range
-        if ((formatSettings.formatOnStatementTerminatorScope == ClientConfigurationFormatScope.FILE) ||
-            ((formatTextRange == null) && formatSettings.formatOnStatementTerminatorDegradeGracefully)) {
+        if ((formattingScope == FormattingScope.FILE) ||
+            ((formatTextRange == null) && degradeGracefully)) {
             formatTextRange = file.getTextRange();
         }
 
