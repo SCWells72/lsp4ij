@@ -14,15 +14,13 @@ package com.redhat.devtools.lsp4ij.features.formatting;
 import com.intellij.codeInsight.editorActions.TypedHandlerDelegate;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.util.containers.ContainerUtil;
-import com.redhat.devtools.lsp4ij.LanguageServerItem;
+import com.redhat.devtools.lsp4ij.LanguageServerWrapper;
 import com.redhat.devtools.lsp4ij.LanguageServiceAccessor;
 import com.redhat.devtools.lsp4ij.features.codeBlockProvider.LSPCodeBlockProvider;
 import com.redhat.devtools.lsp4ij.features.codeBlockProvider.LSPCodeBlockUtils;
@@ -39,15 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
-import static com.redhat.devtools.lsp4ij.internal.CompletableFutures.isDoneNormally;
-import static com.redhat.devtools.lsp4ij.internal.CompletableFutures.waitUntilDone;
+import java.util.Set;
 
 /**
  * Typed handler for LSP4IJ-managed files that performs automatic on-type formatting for specific keystrokes.
@@ -108,50 +100,19 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
 
     @Nullable
     private static ClientConfigurationSettings getClientConfigurationSettings(@NotNull PsiFile file) {
-        List<LanguageServerItem> languageServers = getLanguageServers(file);
-        // TODO: What would it mean to support multiple language servers here?
-        LanguageServerItem languageServer = ContainerUtil.getFirstItem(languageServers);
-        LanguageServerDefinition serverDefinition = languageServer != null ? languageServer.getServerDefinition() : null;
-        if (serverDefinition instanceof UserDefinedLanguageServerDefinition languageServerDefinition) {
-            return languageServerDefinition.getLanguageServerClientConfiguration();
+        Project project = file.getProject();
+        // Client-side on-type formatting shouldn't trigger a language server to start
+        Set<LanguageServerWrapper> startedLanguageServers = LanguageServiceAccessor.getInstance(project).getStartedServers();
+        for (LanguageServerWrapper startedLanguageServer : startedLanguageServers) {
+            if (startedLanguageServer.getClientFeatures().getFormattingFeature().isSupported(file)) {
+                LanguageServerDefinition serverDefinition = startedLanguageServer.getServerDefinition();
+                if (serverDefinition instanceof UserDefinedLanguageServerDefinition languageServerDefinition) {
+                    // TODO: This returns the first match. Is that okay?
+                    return languageServerDefinition.getLanguageServerClientConfiguration();
+                }
+            }
         }
         return null;
-    }
-
-    @NotNull
-    private static List<LanguageServerItem> getLanguageServers(@NotNull PsiFile file) {
-        List<LanguageServerItem> languageServers = new LinkedList<>();
-
-        VirtualFile virtualFile = file.getVirtualFile();
-        if (virtualFile != null) {
-            Project project = file.getProject();
-            CompletableFuture<List<LanguageServerItem>> languageServersFuture = LanguageServiceAccessor.getInstance(project).getLanguageServers(
-                    virtualFile,
-                    clientFeatures -> clientFeatures.getFormattingFeature().isEnabled(file),
-                    clientFeatures -> clientFeatures.getFormattingFeature().isSupported(file)
-            );
-            try {
-                waitUntilDone(languageServersFuture, file);
-            } catch (ProcessCanceledException e) {
-                //Since 2024.2 ProcessCanceledException extends CancellationException so we can't use multicatch to keep backward compatibility
-                //TODO delete block when minimum required version is 2024.2
-                return languageServers;
-            } catch (CancellationException e) {
-                // cancel the LSP requests textDocument/selectionRanges
-                return languageServers;
-            } catch (ExecutionException e) {
-                LOGGER.error("Error while finding language servers for file '{}'", virtualFile.getPath(), e);
-                return languageServers;
-            }
-
-            if (!isDoneNormally(languageServersFuture)) {
-                return languageServers;
-            }
-
-            ContainerUtil.addAllNotNull(languageServers, languageServersFuture.getNow(Collections.emptyList()));
-        }
-
-        return languageServers;
     }
 
     @NotNull
