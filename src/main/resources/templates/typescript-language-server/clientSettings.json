@@ -1,5 +1,12 @@
 {
   "caseSensitive": true,
+  "format": {
+    "formatOnCloseBrace": true,
+    "formatOnStatementTerminator": true,
+    "formatOnStatementTerminatorCharacters": ";",
+    "formatOnStatementTerminatorDegradeGracefully": true,
+    "formatOnCompletionTrigger": true
+  },
   "workspaceSymbol": {
     "supportsGotoClass": true
   }
