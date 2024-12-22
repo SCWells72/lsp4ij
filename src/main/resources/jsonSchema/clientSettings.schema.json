@@ -83,6 +83,17 @@
           "title": "Format the entire file on statement terminator if a code block could not be identified",
           "description": "Whether or not to degrade gracefully to the entire file if a more constrained scope cannot be found when formatting on statement terminator.",
           "default": false
+        },
+        "formatOnCompletionTrigger": {
+          "type": "boolean",
+          "title": "Format on completion trigger",
+          "description": "Whether or not to format on completion trigger.",
+          "default": false
+        },
+        "formatOnCompletionTriggerCharacters": {
+          "type": "string",
+          "title": "Completion trigger characters that should trigger on-type formatting",
+          "description": "The specific completion trigger characters that should trigger on-type formatting. Defaults to the language's completion trigger characters."
         }
       }
     },
