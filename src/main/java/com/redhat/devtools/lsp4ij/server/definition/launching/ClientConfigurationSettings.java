@@ -13,6 +13,7 @@
  *******************************************************************************/
 package com.redhat.devtools.lsp4ij.server.definition.launching;
 
+import com.redhat.devtools.lsp4ij.client.features.LSPFormattingFeature.FormattingScope;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -33,23 +34,6 @@ public class ClientConfigurationSettings {
      * Client-side format settings.
      */
     public static class ClientConfigurationFormatSettings {
-        /**
-         * Supported formatting scopes.
-         */
-        public enum ClientConfigurationFormatScope {
-            /**
-             * The current statement if one can be identified.
-             */
-            STATEMENT,
-            /**
-             * The current code block if one can be identified.
-             */
-            CODE_BLOCK,
-            /**
-             * The current file.
-             */
-            FILE
-        }
 
         /**
          * Whether or not to format on close brace. Defaults to false.
@@ -64,11 +48,10 @@ public class ClientConfigurationSettings {
 
         /**
          * The scope that should be formatted when a close brace is typed. Allowed values are
-         * {@link ClientConfigurationFormatScope#CODE_BLOCK CODE_BLOCK} and
-         * {@link ClientConfigurationFormatScope#FILE FILE}. Defaults to
-         * {@link ClientConfigurationFormatScope#CODE_BLOCK CODE_BLOCK}.
+         * {@link FormattingScope#CODE_BLOCK CODE_BLOCK} and {@link FormattingScope#FILE FILE}. Defaults to
+         * {@link FormattingScope#CODE_BLOCK CODE_BLOCK}.
          */
-        public ClientConfigurationFormatScope formatOnCloseBraceScope = ClientConfigurationFormatScope.CODE_BLOCK;
+        public FormattingScope formatOnCloseBraceScope = FormattingScope.CODE_BLOCK;
 
         /**
          * Whether or not to degrade gracefully to the entire file if a more constrained scope cannot be found when
@@ -88,12 +71,10 @@ public class ClientConfigurationSettings {
 
         /**
          * The scope that should be formatted when a statement terminator is typed. Allowed values are
-         * {@link ClientConfigurationFormatScope#STATEMENT STATEMENT},
-         * {@link ClientConfigurationFormatScope#CODE_BLOCK CODE_BLOCK}, and
-         * {@link ClientConfigurationFormatScope#FILE FILE}. Defaults to
-         * {@link ClientConfigurationFormatScope#STATEMENT STATEMENT}.
+         * {@link FormattingScope#STATEMENT STATEMENT}, {@link FormattingScope#CODE_BLOCK CODE_BLOCK}, and
+         * {@link FormattingScope#FILE FILE}. Defaults to {@link FormattingScope#STATEMENT STATEMENT}.
          */
-        public ClientConfigurationFormatScope formatOnStatementTerminatorScope = ClientConfigurationFormatScope.STATEMENT;
+        public FormattingScope formatOnStatementTerminatorScope = FormattingScope.STATEMENT;
 
         /**
          * Whether or not to degrade gracefully to the code block or entire file if a more constrained scope cannot be
