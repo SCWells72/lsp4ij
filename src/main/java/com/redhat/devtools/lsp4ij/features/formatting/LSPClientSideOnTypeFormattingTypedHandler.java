@@ -90,10 +90,10 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
             }
 
             // Statement terminators
-            // TODO: Need client config for whether or not this should be enabled? Also which exact characters are
-            //  considered statement terminators in the language
-            if (c == ';') {
-                return handleStatementTerminatorTyped(project, editor, file);
+            if (formatSettings.formatOnStatementTerminator &&
+                StringUtil.isNotEmpty(formatSettings.formatOnStatementTerminatorCharacters) &&
+                formatSettings.formatOnStatementTerminatorCharacters.contains(String.valueOf(c))) {
+                return handleStatementTerminatorTyped(project, editor, file, formatSettings);
             }
 
             // Completion triggers
@@ -161,46 +161,48 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
                                                 @NotNull ClientConfigurationFormatSettings formatSettings,
                                                 char openBraceChar,
                                                 char closeBraceChar) {
+        TextRange formatTextRange = null;
+
         // Statement-level scope is not supported for code blocks
         if (formatSettings.formatOnCloseBraceScope == ClientConfigurationFormatScope.STATEMENT) {
             return Result.CONTINUE;
         }
 
-        // If configured to format the entire file, do so now
-        TextRange fileTextRange = file.getTextRange();
-        if (formatSettings.formatOnCloseBraceScope == ClientConfigurationFormatScope.FILE) {
-            CodeStyleManager.getInstance(project).reformatText(file, Collections.singletonList(fileTextRange));
-            return Result.STOP;
-        }
+        // If appropriate, find the code block that was closed by the brace
+        if (formatSettings.formatOnCloseBraceScope == ClientConfigurationFormatScope.CODE_BLOCK) {
+            int offset = editor.getCaretModel().getOffset();
+            int beforeOffset = offset - 1;
+            TextRange codeBlockRange = LSPCodeBlockProvider.getCodeBlockRange(editor, file, beforeOffset);
+            if (codeBlockRange != null) {
+                int startOffset = codeBlockRange.getStartOffset();
+                int endOffset = codeBlockRange.getEndOffset();
 
-        // Otherwise find the code block that was closed by the brace
-        int offset = editor.getCaretModel().getOffset();
-        int beforeOffset = offset - 1;
-        TextRange codeBlockRange = LSPCodeBlockProvider.getCodeBlockRange(editor, file, beforeOffset);
-        if (codeBlockRange != null) {
-            int startOffset = codeBlockRange.getStartOffset();
-            int endOffset = codeBlockRange.getEndOffset();
+                // Make sure the range includes the brace pair
+                Document document = editor.getDocument();
+                CharSequence documentChars = document.getCharsSequence();
+                if ((startOffset > 0) && (documentChars.charAt(startOffset) != openBraceChar)) {
+                    startOffset--;
+                }
+                if ((endOffset < (documentChars.length() - 1)) && (documentChars.charAt(endOffset) != closeBraceChar)) {
+                    endOffset++;
+                }
 
-            // Make sure the range includes the brace pair
-            Document document = editor.getDocument();
-            CharSequence documentChars = document.getCharsSequence();
-            if ((startOffset > 0) && (documentChars.charAt(startOffset) != openBraceChar)) {
-                startOffset--;
-            }
-            if ((endOffset < (documentChars.length() - 1)) && (documentChars.charAt(endOffset) != closeBraceChar)) {
-                endOffset++;
-            }
-
-            // If the range is now the braced block, format it
-            if ((documentChars.charAt(startOffset) == openBraceChar) && (documentChars.charAt(endOffset) == closeBraceChar)) {
-                CodeStyleManager.getInstance(project).reformatText(file, startOffset, endOffset);
-                return Result.STOP;
+                // If the range is now the braced block, format it
+                if ((documentChars.charAt(startOffset) == openBraceChar) && (documentChars.charAt(endOffset) == closeBraceChar)) {
+                    formatTextRange = TextRange.create(startOffset, endOffset);
+                }
             }
         }
 
-        // If we couldn't find a code block and we're configured to degrade gracefully to the file, do so now
-        else if (formatSettings.formatOnCloseBraceDegradeToFile) {
-            CodeStyleManager.getInstance(project).reformatText(file, Collections.singletonList(fileTextRange));
+        // If appropriate, use the file text range
+        if ((formatSettings.formatOnCloseBraceScope == ClientConfigurationFormatScope.FILE) ||
+            ((formatTextRange == null) && formatSettings.formatOnCloseBraceDegradeGracefully)) {
+            formatTextRange = file.getTextRange();
+        }
+
+        // If we have a text range now, format it
+        if (formatTextRange != null) {
+            CodeStyleManager.getInstance(project).reformatText(file, Collections.singletonList(formatTextRange));
             return Result.STOP;
         }
 
@@ -210,56 +212,66 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
     @NotNull
     private static Result handleStatementTerminatorTyped(@NotNull Project project,
                                                          @NotNull Editor editor,
-                                                         @NotNull PsiFile file) {
-        // Find the statement that was just terminated
+                                                         @NotNull PsiFile file,
+                                                         @NotNull ClientConfigurationFormatSettings formatSettings) {
+        TextRange formatTextRange = null;
+
         int offset = editor.getCaretModel().getOffset();
         int beforeOffset = offset - 1;
-        List<TextRange> selectionTextRanges = LSPSelectionRangeSupport.getSelectionTextRanges(file, editor, beforeOffset);
-        if (!ContainerUtil.isEmpty(selectionTextRanges)) {
-            // Find the closest selection range that is extended to line start/end; that should be the statement
-            Document document = editor.getDocument();
-            CharSequence documentChars = document.getCharsSequence();
-            TextRange statementSelectionTextRange = ContainerUtil.find(
-                    selectionTextRanges,
-                    selectionTextRange -> {
-                        int startOffset = selectionTextRange.getStartOffset();
-                        int endOffset = selectionTextRange.getEndOffset();
 
-                        // Remove leading/trailing newlines from the range
-                        while ((startOffset < endOffset) && (documentChars.charAt(startOffset) == '\n')) startOffset++;
-                        while ((endOffset > startOffset) && (documentChars.charAt(endOffset - 1) == '\n')) endOffset--;
-
-                        // See if this is a selection of complete lines
-                        int startLineNumber = document.getLineNumber(startOffset);
-                        int startLineStartOffset = document.getLineStartOffset(startLineNumber);
-                        if (startLineStartOffset == startOffset) {
-                            int endLineNumber = document.getLineNumber(endOffset);
-                            int endLineEndOffset = document.getLineEndOffset(endLineNumber);
-                            if ((endLineEndOffset == endOffset) || (endLineEndOffset == (endOffset + 1))) {
-                                // Make sure that it ends with the terminator that was just typed
-                                String selectionRangeText = StringUtil.trimTrailing(documentChars.subSequence(startOffset, endOffset).toString());
-                                return selectionRangeText.endsWith(";") && ((startOffset + selectionRangeText.length()) == offset);
-                            }
-                        }
-                        return false;
-                    }
-            );
-
-            // If none was found, find the closest selection range that includes the terminator that was just typed
-            if (statementSelectionTextRange == null) {
-                statementSelectionTextRange = ContainerUtil.find(
+        // If appropriate, find the statement that was just terminated
+        if (formatSettings.formatOnStatementTerminatorScope == ClientConfigurationFormatScope.STATEMENT) {
+            List<TextRange> selectionTextRanges = LSPSelectionRangeSupport.getSelectionTextRanges(file, editor, beforeOffset);
+            if (!ContainerUtil.isEmpty(selectionTextRanges)) {
+                // Find the closest selection range that is extended to line start/end; that should be the statement
+                Document document = editor.getDocument();
+                CharSequence documentChars = document.getCharsSequence();
+                formatTextRange = ContainerUtil.find(
                         selectionTextRanges,
-                        selectionTextRange -> selectionTextRange.containsOffset(offset)
+                        selectionTextRange -> {
+                            int startOffset = selectionTextRange.getStartOffset();
+                            int endOffset = selectionTextRange.getEndOffset();
+
+                            // Remove leading/trailing newlines from the range
+                            while ((startOffset < endOffset) && (documentChars.charAt(startOffset) == '\n'))
+                                startOffset++;
+                            while ((endOffset > startOffset) && (documentChars.charAt(endOffset - 1) == '\n'))
+                                endOffset--;
+
+                            // See if this is a selection of complete lines
+                            int startLineNumber = document.getLineNumber(startOffset);
+                            int startLineStartOffset = document.getLineStartOffset(startLineNumber);
+                            if (startLineStartOffset == startOffset) {
+                                int endLineNumber = document.getLineNumber(endOffset);
+                                int endLineEndOffset = document.getLineEndOffset(endLineNumber);
+                                if ((endLineEndOffset == endOffset) || (endLineEndOffset == (endOffset + 1))) {
+                                    // Make sure that it ends with the terminator that was just typed
+                                    String selectionRangeText = StringUtil.trimTrailing(documentChars.subSequence(startOffset, endOffset).toString());
+                                    return selectionRangeText.endsWith(";") && ((startOffset + selectionRangeText.length()) == offset);
+                                }
+                            }
+                            return false;
+                        }
                 );
             }
+        }
 
-            // If we found the statement text range, format it
-            if (statementSelectionTextRange != null) {
-                int startOffset = statementSelectionTextRange.getStartOffset();
-                int endOffset = statementSelectionTextRange.getEndOffset();
-                CodeStyleManager.getInstance(project).reformatText(file, startOffset, endOffset);
-                return Result.STOP;
-            }
+        // If appropriate, find the enclosing code block to format
+        if ((formatSettings.formatOnStatementTerminatorScope == ClientConfigurationFormatScope.CODE_BLOCK) ||
+            ((formatTextRange == null) && formatSettings.formatOnStatementTerminatorDegradeGracefully)) {
+            formatTextRange = LSPCodeBlockProvider.getCodeBlockRange(editor, file, beforeOffset);
+        }
+
+        // If appropriate, use the file text range
+        if ((formatSettings.formatOnStatementTerminatorScope == ClientConfigurationFormatScope.FILE) ||
+            ((formatTextRange == null) && formatSettings.formatOnStatementTerminatorDegradeGracefully)) {
+            formatTextRange = file.getTextRange();
+        }
+
+        // If we have a text range now, format it
+        if (formatTextRange != null) {
+            CodeStyleManager.getInstance(project).reformatText(file, Collections.singletonList(formatTextRange));
+            return Result.STOP;
         }
 
         return Result.CONTINUE;
@@ -271,7 +283,7 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
                                                        @NotNull PsiFile file) {
         // Just format the completion trigger
         int offset = editor.getCaretModel().getOffset();
-        // TODO: We don't know the length of the completion trigger, but this seems to do the right thing
+        // NOTE: Right now all completion triggers are single characters, so this is safe/accurate
         int beforeOffset = offset - 1;
         CodeStyleManager.getInstance(project).reformatText(file, beforeOffset, offset);
         return Result.STOP;
