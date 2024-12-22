@@ -33,8 +33,6 @@ import com.redhat.devtools.lsp4ij.server.definition.launching.ClientConfiguratio
 import com.redhat.devtools.lsp4ij.server.definition.launching.UserDefinedLanguageServerDefinition;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
@@ -46,11 +44,9 @@ import java.util.Set;
  */
 public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDelegate {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LSPClientSideOnTypeFormattingTypedHandler.class);
-
     @Override
     @NotNull
-    public Result charTyped(char c,
+    public Result charTyped(char charTyped,
                             @NotNull Project project,
                             @NotNull Editor editor,
                             @NotNull PsiFile file) {
@@ -62,13 +58,13 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
             if (formatSettings.formatOnCloseBrace) {
                 Map.Entry<Character, Character> bracePair = ContainerUtil.find(
                         LSPCodeBlockUtils.getBracePairs(file).entrySet(),
-                        entry -> entry.getValue() == c
+                        entry -> entry.getValue() == charTyped
                 );
                 if (bracePair != null) {
                     Character openBraceChar = bracePair.getKey();
                     Character closeBraceChar = bracePair.getValue();
                     if (StringUtil.isEmpty(formatSettings.formatOnCloseBraceCharacters) ||
-                        formatSettings.formatOnCloseBraceCharacters.contains(String.valueOf(closeBraceChar))) {
+                        (formatSettings.formatOnCloseBraceCharacters.indexOf(closeBraceChar) > -1)) {
                         return handleCloseBraceTyped(
                                 project,
                                 editor,
@@ -84,22 +80,22 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
             // Statement terminators
             if (formatSettings.formatOnStatementTerminator &&
                 StringUtil.isNotEmpty(formatSettings.formatOnStatementTerminatorCharacters) &&
-                formatSettings.formatOnStatementTerminatorCharacters.contains(String.valueOf(c))) {
-                return handleStatementTerminatorTyped(project, editor, file, formatSettings);
+                (formatSettings.formatOnStatementTerminatorCharacters.indexOf(charTyped) > -1)) {
+                return handleStatementTerminatorTyped(project, editor, file, formatSettings, charTyped);
             }
 
             // Completion triggers
             if (formatSettings.formatOnCompletionTrigger &&
                 // It must be a completion trigger character for the language no matter what
-                LSPTypedHandlerDelegate.hasLanguageServerSupportingCompletionTriggerCharacters(c, project, file) &&
+                LSPTypedHandlerDelegate.hasLanguageServerSupportingCompletionTriggerCharacters(charTyped, project, file) &&
                 // But the subset that should trigger completion can be configured
                 (StringUtil.isEmpty(formatSettings.formatOnCompletionTriggerCharacters) ||
-                 formatSettings.formatOnCompletionTriggerCharacters.contains(String.valueOf(c)))) {
+                 (formatSettings.formatOnCompletionTriggerCharacters.indexOf(charTyped) > -1))) {
                 return handleCompletionTriggerTyped(project, editor, file);
             }
         }
 
-        return super.charTyped(c, project, editor, file);
+        return super.charTyped(charTyped, project, editor, file);
     }
 
     @Nullable
@@ -178,7 +174,8 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
     private static Result handleStatementTerminatorTyped(@NotNull Project project,
                                                          @NotNull Editor editor,
                                                          @NotNull PsiFile file,
-                                                         @NotNull ClientConfigurationFormatSettings formatSettings) {
+                                                         @NotNull ClientConfigurationFormatSettings formatSettings,
+                                                         char statementTerminatorChar) {
         TextRange formatTextRange = null;
 
         int offset = editor.getCaretModel().getOffset();
@@ -212,7 +209,7 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
                                 if ((endLineEndOffset == endOffset) || (endLineEndOffset == (endOffset + 1))) {
                                     // Make sure that it ends with the terminator that was just typed
                                     String selectionRangeText = StringUtil.trimTrailing(documentChars.subSequence(startOffset, endOffset).toString());
-                                    return selectionRangeText.endsWith(";") && ((startOffset + selectionRangeText.length()) == offset);
+                                    return ((startOffset + selectionRangeText.length()) == offset) && selectionRangeText.endsWith(String.valueOf(statementTerminatorChar));
                                 }
                             }
                             return false;
