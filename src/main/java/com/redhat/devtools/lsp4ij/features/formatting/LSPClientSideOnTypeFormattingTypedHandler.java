@@ -11,10 +11,10 @@
 
 package com.redhat.devtools.lsp4ij.features.formatting;
 
-import com.intellij.codeInsight.CodeInsightSettings;
 import com.intellij.codeInsight.editorActions.TypedHandlerDelegate;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.util.text.StringUtil;
@@ -22,20 +22,39 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.util.containers.ContainerUtil;
+import com.redhat.devtools.lsp4ij.LanguageServerItem;
 import com.redhat.devtools.lsp4ij.LanguageServiceAccessor;
 import com.redhat.devtools.lsp4ij.features.codeBlockProvider.LSPCodeBlockProvider;
 import com.redhat.devtools.lsp4ij.features.codeBlockProvider.LSPCodeBlockUtils;
 import com.redhat.devtools.lsp4ij.features.completion.LSPTypedHandlerDelegate;
 import com.redhat.devtools.lsp4ij.features.selectionRange.LSPSelectionRangeSupport;
+import com.redhat.devtools.lsp4ij.server.definition.LanguageServerDefinition;
+import com.redhat.devtools.lsp4ij.server.definition.launching.ClientConfigurationSettings;
+import com.redhat.devtools.lsp4ij.server.definition.launching.ClientConfigurationSettings.ClientConfigurationFormatSettings;
+import com.redhat.devtools.lsp4ij.server.definition.launching.ClientConfigurationSettings.ClientConfigurationFormatSettings.ClientConfigurationFormatScope;
+import com.redhat.devtools.lsp4ij.server.definition.launching.UserDefinedLanguageServerDefinition;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
+import static com.redhat.devtools.lsp4ij.internal.CompletableFutures.isDoneNormally;
+import static com.redhat.devtools.lsp4ij.internal.CompletableFutures.waitUntilDone;
 
 /**
  * Typed handler for LSP4IJ-managed files that performs automatic on-type formatting for specific keystrokes.
  */
 public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDelegate {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(LSPClientSideOnTypeFormattingTypedHandler.class);
 
     @Override
     @NotNull
@@ -43,21 +62,30 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
                             @NotNull Project project,
                             @NotNull Editor editor,
                             @NotNull PsiFile file) {
-        VirtualFile virtualFile = file.getVirtualFile();
-        if ((virtualFile != null) && LanguageServiceAccessor.getInstance(project).hasAny(
-                virtualFile,
-                ls -> ls.getClientFeatures().getFormattingFeature().isSupported(file))
-        ) {
+        ClientConfigurationSettings clientConfigurationSettings = getClientConfigurationSettings(file);
+        if (clientConfigurationSettings != null) {
+            ClientConfigurationFormatSettings formatSettings = clientConfigurationSettings.format;
+
             // Close braces
-            // Respect the IDE-wide setting
-            // TODO: Should this be client config instead/also?
-            if (CodeInsightSettings.getInstance().REFORMAT_BLOCK_ON_RBRACE) {
+            if (formatSettings.formatOnCloseBrace) {
                 Map.Entry<Character, Character> bracePair = ContainerUtil.find(
                         LSPCodeBlockUtils.getBracePairs(file).entrySet(),
                         entry -> entry.getValue() == c
                 );
                 if (bracePair != null) {
-                    return handleCloseBraceTyped(project, editor, file, bracePair.getKey(), bracePair.getValue());
+                    Character openBraceChar = bracePair.getKey();
+                    Character closeBraceChar = bracePair.getValue();
+                    if (StringUtil.isEmpty(formatSettings.formatOnCloseBraceCharacters) ||
+                        formatSettings.formatOnCloseBraceCharacters.contains(String.valueOf(closeBraceChar))) {
+                        return handleCloseBraceTyped(
+                                project,
+                                editor,
+                                file,
+                                formatSettings,
+                                openBraceChar,
+                                closeBraceChar
+                        );
+                    }
                 }
             }
 
@@ -78,13 +106,74 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
         return super.charTyped(c, project, editor, file);
     }
 
+    @Nullable
+    private static ClientConfigurationSettings getClientConfigurationSettings(@NotNull PsiFile file) {
+        List<LanguageServerItem> languageServers = getLanguageServers(file);
+        // TODO: What would it mean to support multiple language servers here?
+        LanguageServerItem languageServer = ContainerUtil.getFirstItem(languageServers);
+        LanguageServerDefinition serverDefinition = languageServer != null ? languageServer.getServerDefinition() : null;
+        if (serverDefinition instanceof UserDefinedLanguageServerDefinition languageServerDefinition) {
+            return languageServerDefinition.getLanguageServerClientConfiguration();
+        }
+        return null;
+    }
+
+    @NotNull
+    private static List<LanguageServerItem> getLanguageServers(@NotNull PsiFile file) {
+        List<LanguageServerItem> languageServers = new LinkedList<>();
+
+        VirtualFile virtualFile = file.getVirtualFile();
+        if (virtualFile != null) {
+            Project project = file.getProject();
+            CompletableFuture<List<LanguageServerItem>> languageServersFuture = LanguageServiceAccessor.getInstance(project).getLanguageServers(
+                    virtualFile,
+                    clientFeatures -> clientFeatures.getFormattingFeature().isEnabled(file),
+                    clientFeatures -> clientFeatures.getFormattingFeature().isSupported(file)
+            );
+            try {
+                waitUntilDone(languageServersFuture, file);
+            } catch (ProcessCanceledException e) {
+                //Since 2024.2 ProcessCanceledException extends CancellationException so we can't use multicatch to keep backward compatibility
+                //TODO delete block when minimum required version is 2024.2
+                return languageServers;
+            } catch (CancellationException e) {
+                // cancel the LSP requests textDocument/selectionRanges
+                return languageServers;
+            } catch (ExecutionException e) {
+                LOGGER.error("Error while finding language servers for file '{}'", virtualFile.getPath(), e);
+                return languageServers;
+            }
+
+            if (!isDoneNormally(languageServersFuture)) {
+                return languageServers;
+            }
+
+            ContainerUtil.addAllNotNull(languageServers, languageServersFuture.getNow(Collections.emptyList()));
+        }
+
+        return languageServers;
+    }
+
     @NotNull
     private static Result handleCloseBraceTyped(@NotNull Project project,
                                                 @NotNull Editor editor,
                                                 @NotNull PsiFile file,
+                                                @NotNull ClientConfigurationFormatSettings formatSettings,
                                                 char openBraceChar,
                                                 char closeBraceChar) {
-        // Find the code block that was closed by the brace
+        // Statement-level scope is not supported for code blocks
+        if (formatSettings.formatOnCloseBraceScope == ClientConfigurationFormatScope.STATEMENT) {
+            return Result.CONTINUE;
+        }
+
+        // If configured to format the entire file, do so now
+        TextRange fileTextRange = file.getTextRange();
+        if (formatSettings.formatOnCloseBraceScope == ClientConfigurationFormatScope.FILE) {
+            CodeStyleManager.getInstance(project).reformatText(file, Collections.singletonList(fileTextRange));
+            return Result.STOP;
+        }
+
+        // Otherwise find the code block that was closed by the brace
         int offset = editor.getCaretModel().getOffset();
         int beforeOffset = offset - 1;
         TextRange codeBlockRange = LSPCodeBlockProvider.getCodeBlockRange(editor, file, beforeOffset);
@@ -107,6 +196,12 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
                 CodeStyleManager.getInstance(project).reformatText(file, startOffset, endOffset);
                 return Result.STOP;
             }
+        }
+
+        // If we couldn't find a code block and we're configured to degrade gracefully to the file, do so now
+        else if (formatSettings.formatOnCloseBraceDegradeToFile) {
+            CodeStyleManager.getInstance(project).reformatText(file, Collections.singletonList(fileTextRange));
+            return Result.STOP;
         }
 
         return Result.CONTINUE;

@@ -20,7 +20,55 @@ import org.jetbrains.annotations.NotNull;
  */
 public class ClientConfigurationSettings {
     /**
-     * Client-side code workspace symbol settings.
+     * Client-side format settings.
+     */
+    public static class ClientConfigurationFormatSettings {
+        /**
+         * Supported formatting scopes.
+         */
+        public enum ClientConfigurationFormatScope {
+            /**
+             * The current statement if one can be identified.
+             */
+            STATEMENT,
+            /**
+             * The current code block if one can be identified.
+             */
+            CODE_BLOCK,
+            /**
+             * The current file.
+             */
+            FILE
+        }
+
+        /**
+         * Whether or not to format on close brace. Defaults to false.
+         */
+        public boolean formatOnCloseBrace = false;
+
+        /**
+         * The specific close brace characters that should trigger a format. Defaults to the language's close brace
+         * characters.
+         */
+        public String formatOnCloseBraceCharacters = null;
+
+        /**
+         * The scope that should be formatted when a close brace is typed. Allowed values are
+         * {@link ClientConfigurationFormatScope#CODE_BLOCK CODE_BLOCK} and
+         * {@link ClientConfigurationFormatScope#FILE FILE}. Defaults to
+         * {@link ClientConfigurationFormatScope#CODE_BLOCK CODE_BLOCK}.
+         */
+        public ClientConfigurationFormatScope formatOnCloseBraceScope = ClientConfigurationFormatScope.CODE_BLOCK;
+
+        /**
+         * Whether or not to degrade gracefully to the entire file if a more constrained scope cannot be found when
+         * formatting on close brace. Defaults to false.
+         */
+        public boolean formatOnCloseBraceDegradeToFile = false;
+    }
+
+    /**
+     * Client-side workspace symbol settings.
      */
     public static class ClientConfigurationWorkspaceSymbolSettings {
         /**
@@ -35,7 +83,12 @@ public class ClientConfigurationSettings {
     public boolean caseSensitive = false;
 
     /**
-     * Client-side code workspace symbol settings
+     * Client-side format settings.
+     */
+    public @NotNull ClientConfigurationFormatSettings format = new ClientConfigurationFormatSettings();
+
+    /**
+     * Client-side workspace symbol settings.
      */
     public @NotNull ClientConfigurationWorkspaceSymbolSettings workspaceSymbol = new ClientConfigurationWorkspaceSymbolSettings();
 }
