@@ -90,6 +90,17 @@ public class ClientConfigurationSettings {
          * found when formatting on statement terminator. Defaults to false.
          */
         public boolean formatOnStatementTerminatorDegradeGracefully = false;
+
+        /**
+         * Whether or not to format on completion trigger. Defaults to false.
+         */
+        public boolean formatOnCompletionTrigger = false;
+
+        /**
+         * The specific completion trigger characters that should trigger on-type formatting. Defaults to the language's
+         * completion trigger characters.
+         */
+        public String formatOnCompletionTriggerCharacters = null;
     }
 
     /**

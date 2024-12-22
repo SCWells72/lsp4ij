@@ -89,8 +89,12 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
             }
 
             // Completion triggers
-            // TODO: Need client config for whether or not this should be enabled?
-            if (LSPTypedHandlerDelegate.hasLanguageServerSupportingCompletionTriggerCharacters(c, project, file)) {
+            if (formatSettings.formatOnCompletionTrigger &&
+                // It must be a completion trigger character for the language no matter what
+                LSPTypedHandlerDelegate.hasLanguageServerSupportingCompletionTriggerCharacters(c, project, file) &&
+                // But the subset that should trigger completion can be configured
+                (StringUtil.isEmpty(formatSettings.formatOnCompletionTriggerCharacters) ||
+                 formatSettings.formatOnCompletionTriggerCharacters.contains(String.valueOf(c)))) {
                 return handleCompletionTriggerTyped(project, editor, file);
             }
         }
