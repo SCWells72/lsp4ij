@@ -11,6 +11,7 @@
 package com.redhat.devtools.lsp4ij.features.selectionRange;
 
 import com.intellij.codeInsight.editorActions.ExtendWordSelectionHandler;
+import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
@@ -70,11 +71,41 @@ public class LSPExtendWordSelectionHandler implements ExtendWordSelectionHandler
             return null;
         }
 
+        // If the caret is at a line start, try to find the first non-whitespace character in the line and get the
+        // selection ranges for it
+        int effectiveOffset = offset;
+        Document document = editor.getDocument();
+        int lineNumber = document.getLineNumber(offset);
+        int lineStartOffset = document.getLineStartOffset(lineNumber);
+        if (offset == lineStartOffset) {
+            int lineEndOffset = document.getLineEndOffset(lineNumber);
+            int selectionStartOffset = offset;
+            while (Character.isWhitespace(editorText.charAt(selectionStartOffset)) && selectionStartOffset <= lineEndOffset) {
+                selectionStartOffset++;
+            }
+            if (selectionStartOffset <= lineEndOffset) {
+                effectiveOffset = selectionStartOffset;
+            }
+        }
+
+        // Get the selection ranges and extend them to whole lines
         Set<TextRange> textRanges = new LinkedHashSet<>();
-        List<TextRange> selectionTextRanges = LSPSelectionRangeSupport.getSelectionTextRanges(file, editor, offset);
+        List<TextRange> selectionTextRanges = LSPSelectionRangeSupport.getSelectionTextRanges(file, editor, effectiveOffset);
         for (TextRange selectionTextRange : selectionTextRanges) {
             ContainerUtil.addAllNotNull(textRanges, expandToWholeLinesWithBlanks(editorText, selectionTextRange));
         }
+
+        // If the original offset was at line start and the effective offset was not, remove all text ranges that are
+        // not also at a line start
+        if ((offset == lineStartOffset) && (offset != effectiveOffset)) {
+            textRanges.removeIf(textRange -> {
+                int startOffset = textRange.getStartOffset();
+                int startLineNumber = document.getLineNumber(startOffset);
+                int startLineStartOffset = document.getLineStartOffset(startLineNumber);
+                return startOffset != startLineStartOffset;
+            });
+        }
+
         return new ArrayList<>(textRanges);
     }
 }
