@@ -17,11 +17,17 @@ import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import com.intellij.util.containers.ContainerUtil;
 import com.redhat.devtools.lsp4ij.LanguageServiceAccessor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+
+import static com.intellij.codeInsight.editorActions.ExtendWordSelectionHandlerBase.expandToWholeLinesWithBlanks;
 
 /**
  * Implementation of the IDE's extendWordSelectionHandler EP for LSP4IJ files against textDocument/selectionRange.
@@ -64,25 +70,10 @@ public class LSPExtendWordSelectionHandler implements ExtendWordSelectionHandler
             return null;
         }
 
-        // Get the selection ranges
-        Document document = editor.getDocument();
-        List<SelectionRange> selectionRanges = LSPSelectionRangeSupport.getSelectionRanges(file, document, offset);
-        if (ContainerUtil.isEmpty(selectionRanges)) {
-            return null;
-        }
-
-        // Convert the selection ranges into text ranges
-        Set<TextRange> textRanges = new LinkedHashSet<>(selectionRanges.size());
-        for (SelectionRange selectionRange : selectionRanges) {
-            TextRange selectionTextRange = LSPSelectionRangeSupport.getTextRange(selectionRange, document);
-            textRanges.addAll(expandToWholeLinesWithBlanks(editorText, selectionTextRange));
-
-            for (SelectionRange parentSelectionRange = selectionRange.getParent();
-                 parentSelectionRange != null;
-                 parentSelectionRange = parentSelectionRange.getParent()) {
-                TextRange parentSelectionTextRange = LSPSelectionRangeSupport.getTextRange(parentSelectionRange, document);
-                textRanges.addAll(expandToWholeLinesWithBlanks(editorText, parentSelectionTextRange));
-            }
+        Set<TextRange> textRanges = new LinkedHashSet<>();
+        List<TextRange> selectionTextRanges = LSPSelectionRangeSupport.getSelectionTextRanges(file, editor, offset);
+        for (TextRange selectionTextRange : selectionTextRanges) {
+            ContainerUtil.addAllNotNull(textRanges, expandToWholeLinesWithBlanks(editorText, selectionTextRange));
         }
         return new ArrayList<>(textRanges);
     }
