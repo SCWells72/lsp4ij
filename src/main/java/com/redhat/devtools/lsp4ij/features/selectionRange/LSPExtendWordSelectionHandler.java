@@ -16,11 +16,17 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import com.intellij.util.containers.ContainerUtil;
 import com.redhat.devtools.lsp4ij.LanguageServiceAccessor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+
+import static com.intellij.codeInsight.editorActions.ExtendWordSelectionHandlerBase.expandToWholeLinesWithBlanks;
 
 /**
  * Implementation of the IDE's extendWordSelectionHandler EP for LSP4IJ files against textDocument/selectionRange.
@@ -59,6 +65,11 @@ public class LSPExtendWordSelectionHandler implements ExtendWordSelectionHandler
             return null;
         }
 
-        return LSPSelectionRangeSupport.getSelectionTextRanges(file, editor, offset);
+        Set<TextRange> textRanges = new LinkedHashSet<>();
+        List<TextRange> selectionTextRanges = LSPSelectionRangeSupport.getSelectionTextRanges(file, editor, offset);
+        for (TextRange selectionTextRange : selectionTextRanges) {
+            ContainerUtil.addAllNotNull(textRanges, expandToWholeLinesWithBlanks(editorText, selectionTextRange));
+        }
+        return new ArrayList<>(textRanges);
     }
 }
