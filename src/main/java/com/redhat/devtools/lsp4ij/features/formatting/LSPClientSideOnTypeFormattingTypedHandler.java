@@ -20,6 +20,7 @@ import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.util.containers.ContainerUtil;
+import com.redhat.devtools.lsp4ij.LSPIJUtils;
 import com.redhat.devtools.lsp4ij.LanguageServerWrapper;
 import com.redhat.devtools.lsp4ij.LanguageServiceAccessor;
 import com.redhat.devtools.lsp4ij.client.features.LSPFormattingFeature;
@@ -114,9 +115,13 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
         // Client-side on-type formatting shouldn't trigger a language server to start
         Set<LanguageServerWrapper> startedLanguageServers = LanguageServiceAccessor.getInstance(project).getStartedServers();
         for (LanguageServerWrapper startedLanguageServer : startedLanguageServers) {
-            if (startedLanguageServer.getClientFeatures().getFormattingFeature().isSupported(file)) {
-                // TODO: This returns the first match. Is that okay?
-                return startedLanguageServer.getClientFeatures().getFormattingFeature();
+            // TODO: Is there a better way to ask if this language server supports the file?
+            if (startedLanguageServer.isConnectedTo(LSPIJUtils.toUri(file))) {
+                LSPFormattingFeature formattingFeature = startedLanguageServer.getClientFeatures().getFormattingFeature();
+                if (formattingFeature.isEnabled(file) && formattingFeature.isSupported(file)) {
+                    // TODO: This returns the first match. Is that okay?
+                    return formattingFeature;
+                }
             }
         }
         return null;
