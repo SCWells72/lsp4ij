@@ -209,11 +209,24 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
                             int startOffset = selectionTextRange.getStartOffset();
                             int endOffset = selectionTextRange.getEndOffset();
 
-                            // Remove leading/trailing newlines from the range
+                            // Remove leading newlines from the range
                             while ((startOffset < endOffset) && (documentChars.charAt(startOffset) == '\n'))
                                 startOffset++;
-                            while ((endOffset > startOffset) && (documentChars.charAt(endOffset - 1) == '\n'))
-                                endOffset--;
+                            // Remove trailing whitespace up until newlines (inclusive) from the range
+                            boolean foundNewline = false;
+                            while (endOffset > startOffset) {
+                                char previousEndChar = documentChars.charAt(endOffset - 1);
+                                if (!Character.isWhitespace(previousEndChar)) {
+                                    break;
+                                } else if (previousEndChar == '\n') {
+                                    endOffset--;
+                                    foundNewline = true;
+                                } else if (!foundNewline) {
+                                    endOffset--;
+                                } else {
+                                    break;
+                                }
+                            }
 
                             // See if this is a selection of complete lines
                             int startLineNumber = document.getLineNumber(startOffset);
