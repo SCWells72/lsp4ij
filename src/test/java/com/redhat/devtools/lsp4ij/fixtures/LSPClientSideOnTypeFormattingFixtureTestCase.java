@@ -76,7 +76,7 @@ public abstract class LSPClientSideOnTypeFormattingFixtureTestCase extends LSPCo
                                           @NotNull String mockSelectionRangeJson,
                                           @NotNull String mockFoldingRangeJson,
                                           @NotNull String mockRangeFormattingJson,
-                                          @NotNull Consumer<ClientConfigurationSettings> clientConfigCustomizer) {
+                                          @Nullable Consumer<ClientConfigurationSettings> clientConfigCustomizer) {
         MockLanguageServer.INSTANCE.setTimeToProceedQueries(100);
 
         List<FoldingRange> mockFoldingRanges = JSONUtils.getLsp4jGson().fromJson(mockFoldingRangeJson, new TypeToken<List<FoldingRange>>() {
@@ -117,12 +117,14 @@ public abstract class LSPClientSideOnTypeFormattingFixtureTestCase extends LSPCo
         languageServer.getServerCapabilities().setDocumentRangeFormattingProvider(true);
 
         // Update client configuration as required for this test scenario
-        LanguageServerDefinition languageServerDefinition = languageServer.getServerDefinition();
-        assertInstanceOf(languageServerDefinition, ClientConfigurableLanguageServerDefinition.class);
-        ClientConfigurableLanguageServerDefinition configurableLanguageServerDefinition = (ClientConfigurableLanguageServerDefinition) languageServerDefinition;
-        ClientConfigurationSettings clientConfiguration = configurableLanguageServerDefinition.getLanguageServerClientConfiguration();
-        assertNotNull(clientConfiguration);
-        clientConfigCustomizer.accept(clientConfiguration);
+        if (clientConfigCustomizer != null) {
+            LanguageServerDefinition languageServerDefinition = languageServer.getServerDefinition();
+            assertInstanceOf(languageServerDefinition, ClientConfigurableLanguageServerDefinition.class);
+            ClientConfigurableLanguageServerDefinition configurableLanguageServerDefinition = (ClientConfigurableLanguageServerDefinition) languageServerDefinition;
+            ClientConfigurationSettings clientConfiguration = configurableLanguageServerDefinition.getLanguageServerClientConfiguration();
+            assertNotNull(clientConfiguration);
+            clientConfigCustomizer.accept(clientConfiguration);
+        }
 
         EditorTestUtil.buildInitialFoldingsInBackground(editor);
 

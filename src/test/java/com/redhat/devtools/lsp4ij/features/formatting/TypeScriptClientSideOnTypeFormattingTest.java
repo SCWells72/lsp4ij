@@ -126,9 +126,7 @@ public class TypeScriptClientSideOnTypeFormattingTest extends LSPClientSideOnTyp
                 SIMPLE_FOCB_MOCK_SELECTION_RANGE_JSON,
                 SIMPLE_FOCB_MOCK_FOLDING_RANGE_JSON,
                 SIMPLE_FOCB_MOCK_RANGE_FORMATTING_JSON,
-                clientConfiguration -> {
-                    // No-op as the default is disabled
-                }
+                null // No-op as the default is disabled
         );
     }
 
@@ -289,9 +287,7 @@ public class TypeScriptClientSideOnTypeFormattingTest extends LSPClientSideOnTyp
                 COMPLEX_FOCB_MOCK_SELECTION_RANGE_JSON,
                 COMPLEX_FOCB_MOCK_FOLDING_RANGE_JSON,
                 COMPLEX_FOCB_MOCK_RANGE_FORMATTING_JSON,
-                clientConfiguration -> {
-                    // No-op as the default is disabled
-                }
+                null // No-op as the default is disabled
         );
     }
 
@@ -330,7 +326,7 @@ public class TypeScriptClientSideOnTypeFormattingTest extends LSPClientSideOnTyp
                 COMPLEX_FOCB_MOCK_FOLDING_RANGE_JSON,
                 COMPLEX_FOCB_MOCK_RANGE_FORMATTING_JSON,
                 clientConfiguration -> {
-                    clientConfiguration.format.formatOnCloseBrace = false;
+                    clientConfiguration.format.formatOnCloseBrace = true;
                     // Explicitly specify close brace characters that don't include right curly brace
                     clientConfiguration.format.formatOnCloseBraceCharacters = "])";
                 }
