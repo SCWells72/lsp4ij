@@ -130,9 +130,6 @@ public class TypeScriptClientSideFormatOnStatementTerminatorTest extends LSPClie
             """;
 
     // language=json
-    private static final String SIMPLE_MOCK_FOLDING_RANGE_JSON = "[]";
-
-    // language=json
     private static final String SIMPLE_MOCK_RANGE_FORMATTING_JSON = """
             [
               {
@@ -173,7 +170,7 @@ public class TypeScriptClientSideFormatOnStatementTerminatorTest extends LSPClie
                         }
                         """,
                 SIMPLE_MOCK_SELECTION_RANGE_JSON,
-                SIMPLE_MOCK_FOLDING_RANGE_JSON,
+                "[]",
                 SIMPLE_MOCK_RANGE_FORMATTING_JSON,
                 null // No-op as the default is disabled
         );
@@ -192,7 +189,7 @@ public class TypeScriptClientSideFormatOnStatementTerminatorTest extends LSPClie
                         }
                         """,
                 SIMPLE_MOCK_SELECTION_RANGE_JSON,
-                SIMPLE_MOCK_FOLDING_RANGE_JSON,
+                "[]",
                 SIMPLE_MOCK_RANGE_FORMATTING_JSON,
                 clientConfiguration -> {
                     clientConfiguration.format.formatOnStatementTerminator = true;
@@ -214,7 +211,7 @@ public class TypeScriptClientSideFormatOnStatementTerminatorTest extends LSPClie
                         }
                         """,
                 SIMPLE_MOCK_SELECTION_RANGE_JSON,
-                SIMPLE_MOCK_FOLDING_RANGE_JSON,
+                "[]",
                 SIMPLE_MOCK_RANGE_FORMATTING_JSON,
                 clientConfiguration -> clientConfiguration.format.formatOnStatementTerminator = true
         );
