@@ -18,21 +18,118 @@ import com.redhat.devtools.lsp4ij.fixtures.LSPClientSideOnTypeFormattingFixtureT
  */
 public class TypeScriptClientSideOnTypeFormattingTest extends LSPClientSideOnTypeFormattingFixtureTestCase {
 
+    private static final String TEST_FILE_NAME = "test.ts";
+
     public TypeScriptClientSideOnTypeFormattingTest() {
         super("*.ts");
     }
 
     public void testFormatOnCloseBrace() {
+        // language=json
+        String mockSelectionRangeJson = """
+                [
+                  {
+                    "range": {
+                      "start": {
+                        "line": 1,
+                        "character": 10
+                      },
+                      "end": {
+                        "line": 4,
+                        "character": 1
+                      }
+                    },
+                    "parent": {
+                      "range": {
+                        "start": {
+                          "line": 1,
+                          "character": 4
+                        },
+                        "end": {
+                          "line": 4,
+                          "character": 1
+                        }
+                      },
+                      "parent": {
+                        "range": {
+                          "start": {
+                            "line": 0,
+                            "character": 0
+                          },
+                          "end": {
+                            "line": 4,
+                            "character": 1
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+                """;
+        // language=json
+        String mockFoldingRangeJson = """
+                [
+                  {
+                    "startLine": 0,
+                    "endLine": 3
+                  },
+                  {
+                    "startLine": 1,
+                    "endLine": 2
+                  }
+                ]
+                """;
+        // language=json
+        String mockRangeFormattingJson = """
+                [
+                  {
+                    "range": {
+                      "start": {
+                        "line": 2,
+                        "character": 0
+                      },
+                      "end": {
+                        "line": 2,
+                        "character": 0
+                      }
+                    },
+                    "newText": "        "
+                  }
+                ]
+                """;
+
+        // No language injection here because there are syntax errors
+        String fileBodyBefore = """
+                export class Foo {
+                    bar() {
+                console.log('Hello, world.');
+                    // type }
+                }
+                """;
+
+        // First test with the format-on-close-brace disabled
         assertOnTypeFormatting(
-                "test.ts",
+                TEST_FILE_NAME,
                 // No language injection here because there are syntax errors
+                fileBodyBefore,
+                // language=typescript
                 """
                         export class Foo {
                             bar() {
                         console.log('Hello, world.');
-                            // type }
+                            }
                         }
                         """,
+                mockSelectionRangeJson,
+                mockFoldingRangeJson,
+                mockRangeFormattingJson,
+                clientConfiguration -> clientConfiguration.format.formatOnCloseBrace = false
+        );
+
+        // Then test with the format-on-close-brace enabled
+        assertOnTypeFormatting(
+                TEST_FILE_NAME,
+                fileBodyBefore,
                 // language=typescript
                 """
                         export class Foo {
@@ -41,81 +138,10 @@ public class TypeScriptClientSideOnTypeFormattingTest extends LSPClientSideOnTyp
                             }
                         }
                         """,
-                // language=json
-                """
-                        [
-                          {
-                            "range": {
-                              "start": {
-                                "line": 1,
-                                "character": 10
-                              },
-                              "end": {
-                                "line": 4,
-                                "character": 1
-                              }
-                            },
-                            "parent": {
-                              "range": {
-                                "start": {
-                                  "line": 1,
-                                  "character": 4
-                                },
-                                "end": {
-                                  "line": 4,
-                                  "character": 1
-                                }
-                              },
-                              "parent": {
-                                "range": {
-                                  "start": {
-                                    "line": 0,
-                                    "character": 0
-                                  },
-                                  "end": {
-                                    "line": 4,
-                                    "character": 1
-                                  }
-                                }
-                              }
-                            }
-                          }
-                        ]
-                        """,
-                // language=json
-                """
-                        [
-                          {
-                            "startLine": 0,
-                            "endLine": 3
-                          },
-                          {
-                            "startLine": 1,
-                            "endLine": 2
-                          }
-                        ]
-                        """,
-                // language=json
-                """
-                        [
-                          {
-                            "range": {
-                              "start": {
-                                "line": 2,
-                                "character": 0
-                              },
-                              "end": {
-                                "line": 2,
-                                "character": 0
-                              }
-                            },
-                            "newText": "        "
-                          }
-                        ]
-                        """,
-                clientConfiguration -> {
-                    clientConfiguration.format.formatOnCloseBrace = true;
-                    return true;
-                });
+                mockSelectionRangeJson,
+                mockFoldingRangeJson,
+                mockRangeFormattingJson,
+                clientConfiguration -> clientConfiguration.format.formatOnCloseBrace = true
+        );
     }
 }

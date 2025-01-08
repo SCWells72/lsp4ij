@@ -18,7 +18,6 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Pair;
 import com.intellij.psi.PsiFile;
 import com.intellij.testFramework.EditorTestUtil;
-import com.intellij.util.Processor;
 import com.intellij.util.containers.ContainerUtil;
 import com.redhat.devtools.lsp4ij.JSONUtils;
 import com.redhat.devtools.lsp4ij.LanguageServerItem;
@@ -38,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -53,13 +53,30 @@ public abstract class LSPClientSideOnTypeFormattingFixtureTestCase extends LSPCo
         super(fileNamePatterns);
     }
 
+    /**
+     * Asserts that <code>fileBodyBefore</code> is formatted into <code>fileBodyAfter</code> when the typing imperative
+     * embedded in <code>fileBodyBefore</code> is applied. The typing imperative is just a simple comment of the form
+     * <code>// type &lt;character&gt;</code> at the offset at which <code>&lt;character&gt;</code> should be typed.
+     * Mock LSP responses must be provided for <code>textDocument/selectionRange</code> and
+     * <code>textDocument/foldingRange</code> so that the correct code block can be computed, and a mock LSP response
+     * must also be provided for the <code>textDocument/rangeFormatting</code> response.
+     *
+     * @param fileName                the file name
+     * @param fileBodyBefore          the file body before including the embedded typing imperative comment
+     * @param fileBodyAfter           the file body after the character has been typed and formatting applied
+     * @param mockSelectionRangeJson  the mock selection range JSON response
+     * @param mockFoldingRangeJson    the mock folding range JSON response
+     * @param mockRangeFormattingJson the mock range formatting JSON response
+     * @param clientConfigCustomizer  a function that allows the caller to customize the client configuration as needed
+     *                                for the test scenario
+     */
     protected void assertOnTypeFormatting(@NotNull String fileName,
                                           @NotNull String fileBodyBefore,
                                           @NotNull String fileBodyAfter,
                                           @NotNull String mockSelectionRangeJson,
                                           @NotNull String mockFoldingRangeJson,
                                           @NotNull String mockRangeFormattingJson,
-                                          @NotNull Processor<ClientConfigurationSettings> clientConfigCustomizer) {
+                                          @NotNull Consumer<ClientConfigurationSettings> clientConfigCustomizer) {
         MockLanguageServer.INSTANCE.setTimeToProceedQueries(100);
 
         List<FoldingRange> mockFoldingRanges = JSONUtils.getLsp4jGson().fromJson(mockFoldingRangeJson, new TypeToken<List<FoldingRange>>() {
@@ -105,7 +122,7 @@ public abstract class LSPClientSideOnTypeFormattingFixtureTestCase extends LSPCo
         ClientConfigurableLanguageServerDefinition configurableLanguageServerDefinition = (ClientConfigurableLanguageServerDefinition) languageServerDefinition;
         ClientConfigurationSettings clientConfiguration = configurableLanguageServerDefinition.getLanguageServerClientConfiguration();
         assertNotNull(clientConfiguration);
-        clientConfigCustomizer.process(clientConfiguration);
+        clientConfigCustomizer.accept(clientConfiguration);
 
         EditorTestUtil.buildInitialFoldingsInBackground(editor);
 
