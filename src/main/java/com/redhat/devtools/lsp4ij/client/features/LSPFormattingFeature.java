@@ -194,19 +194,6 @@ public class LSPFormattingFeature extends AbstractLSPDocumentFeature {
     }
 
     /**
-     * Whether or not to degrade gracefully to the entire file if a more constrained scope cannot be found when
-     * formatting on close brace. Defaults to false.
-     *
-     * @param file the file
-     * @return true if the entire file should be formatted when close braces are typed and no specific code block can
-     * be found; otherwise false
-     */
-    public boolean isFormatOnCloseBraceDegradeGracefully(@NotNull PsiFile file) {
-        // Default to disabled
-        return false;
-    }
-
-    /**
      * Whether or not to format the file when statement terminators are typed. Defaults to false.
      *
      * @param file the file
@@ -241,19 +228,6 @@ public class LSPFormattingFeature extends AbstractLSPDocumentFeature {
     public FormattingScope getFormatOnStatementTerminatorScope(@NotNull PsiFile file) {
         // Default to STATEMENT
         return FormattingScope.STATEMENT;
-    }
-
-    /**
-     * Whether or not to degrade gracefully to the entire file if a more constrained scope cannot be found when
-     * formatting on statement terminator. Defaults to false.
-     *
-     * @param file the file
-     * @return true if the containing code block or entire file should be formatted when statement terminators are typed
-     * and no specific statement can be found; otherwise false
-     */
-    public boolean isFormatOnStatementTerminatorDegradeGracefully(@NotNull PsiFile file) {
-        // Default to disabled
-        return false;
     }
 
     /**

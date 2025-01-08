@@ -37,12 +37,6 @@
           "description": "The scope that should be formatted when a close brace is typed.",
           "default": "CODE_BLOCK"
         },
-        "formatOnCloseBraceDegradeGracefully": {
-          "type": "boolean",
-          "title": "Format the entire file on close brace if a code block could not be identified",
-          "description": "Whether or not to degrade gracefully to the entire file if a more constrained scope cannot be found when formatting on close brace.",
-          "default": false
-        },
         "formatOnStatementTerminator": {
           "type": "boolean",
           "title": "Format on statement terminator",
@@ -64,12 +58,6 @@
           "title": "The scope to format when statement terminator is typed",
           "description": "The scope that should be formatted when a statement terminator is typed.",
           "default": "STATEMENT"
-        },
-        "formatOnStatementTerminatorDegradeGracefully": {
-          "type": "boolean",
-          "title": "Format the entire file on statement terminator if a code block could not be identified",
-          "description": "Whether or not to degrade gracefully to the entire file if a more constrained scope cannot be found when formatting on statement terminator.",
-          "default": false
         },
         "formatOnCompletionTrigger": {
           "type": "boolean",
