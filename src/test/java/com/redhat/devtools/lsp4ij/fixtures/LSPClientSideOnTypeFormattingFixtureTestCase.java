@@ -116,6 +116,9 @@ public abstract class LSPClientSideOnTypeFormattingFixtureTestCase extends LSPCo
         // Enable range formatting
         languageServer.getServerCapabilities().setDocumentRangeFormattingProvider(true);
 
+        // Enable dot as a completion trigger character
+        languageServer.getServerCapabilities().getCompletionProvider().setTriggerCharacters(List.of("."));
+
         // Update client configuration as required for this test scenario
         if (clientConfigCustomizer != null) {
             LanguageServerDefinition languageServerDefinition = languageServer.getServerDefinition();
