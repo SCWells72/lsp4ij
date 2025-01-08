@@ -92,20 +92,46 @@ public class LSPCodeBlockProvider implements CodeBlockProvider {
                 closeBraceChar,
                 closeBraceOffset
         );
-        if (codeBlockRange != null) {
-            return codeBlockRange;
-        }
 
         // Failing that, try to find it using the folding ranges
-        return getUsingFoldingRanges(
-                file,
-                document,
-                offset,
-                openBraceChar,
-                openBraceOffset,
-                closeBraceChar,
-                closeBraceOffset
-        );
+        if (codeBlockRange == null) {
+            codeBlockRange = getUsingFoldingRanges(
+                    file,
+                    document,
+                    offset,
+                    openBraceChar,
+                    openBraceOffset,
+                    closeBraceChar,
+                    closeBraceOffset
+            );
+        }
+
+        // If those failed and we're seemingly anchored by a brace character, try to search unanchored
+        if ((codeBlockRange == null) && (openBraceChar != null) && (closeBraceChar != null)) {
+            codeBlockRange = getUsingSelectionRanges(
+                    file,
+                    editor,
+                    offset,
+                    null,
+                    -1,
+                    null,
+                    -1
+            );
+
+            if (codeBlockRange == null) {
+                codeBlockRange = getUsingFoldingRanges(
+                        file,
+                        document,
+                        offset,
+                        null,
+                        -1,
+                        null,
+                        -1
+                );
+            }
+        }
+
+        return codeBlockRange;
     }
 
     @Nullable
