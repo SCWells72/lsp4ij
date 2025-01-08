@@ -169,9 +169,7 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
         }
 
         // If appropriate, use the file text range
-        boolean degradeGracefully = formattingFeature.isFormatOnCloseBraceDegradeGracefully(file);
-        if ((formattingScope == FormattingScope.FILE) ||
-            ((formatTextRange == null) && degradeGracefully)) {
+        else if (formattingScope == FormattingScope.FILE) {
             formatTextRange = file.getTextRange();
         }
 
@@ -247,15 +245,12 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
         }
 
         // If appropriate, find the enclosing code block to format
-        boolean degradeGracefully = formattingFeature.isFormatOnStatementTerminatorDegradeGracefully(file);
-        if ((formattingScope == FormattingScope.CODE_BLOCK) ||
-            ((formatTextRange == null) && degradeGracefully)) {
+        else if (formattingScope == FormattingScope.CODE_BLOCK) {
             formatTextRange = LSPCodeBlockProvider.getCodeBlockRange(editor, file, beforeOffset);
         }
 
         // If appropriate, use the file text range
-        if ((formattingScope == FormattingScope.FILE) ||
-            ((formatTextRange == null) && degradeGracefully)) {
+        else if (formattingScope == FormattingScope.FILE) {
             formatTextRange = file.getTextRange();
         }
 

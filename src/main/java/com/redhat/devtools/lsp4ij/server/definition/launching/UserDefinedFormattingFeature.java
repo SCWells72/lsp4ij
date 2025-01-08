@@ -54,12 +54,6 @@ public class UserDefinedFormattingFeature extends LSPFormattingFeature {
     }
 
     @Override
-    public boolean isFormatOnCloseBraceDegradeGracefully(@NotNull PsiFile file) {
-        ClientConfigurationFormatSettings formatSettings = getFormatSettings();
-        return formatSettings != null ? formatSettings.formatOnCloseBraceDegradeGracefully : super.isFormatOnCloseBraceDegradeGracefully(file);
-    }
-
-    @Override
     public boolean isFormatOnStatementTerminator(@NotNull PsiFile file) {
         ClientConfigurationFormatSettings formatSettings = getFormatSettings();
         return formatSettings != null ? formatSettings.formatOnStatementTerminator : super.isFormatOnStatementTerminator(file);
@@ -77,12 +71,6 @@ public class UserDefinedFormattingFeature extends LSPFormattingFeature {
     public FormattingScope getFormatOnStatementTerminatorScope(@NotNull PsiFile file) {
         ClientConfigurationFormatSettings formatSettings = getFormatSettings();
         return formatSettings != null ? formatSettings.formatOnStatementTerminatorScope : super.getFormatOnStatementTerminatorScope(file);
-    }
-
-    @Override
-    public boolean isFormatOnStatementTerminatorDegradeGracefully(@NotNull PsiFile file) {
-        ClientConfigurationFormatSettings formatSettings = getFormatSettings();
-        return formatSettings != null ? formatSettings.formatOnStatementTerminatorDegradeGracefully : super.isFormatOnStatementTerminatorDegradeGracefully(file);
     }
 
     @Override

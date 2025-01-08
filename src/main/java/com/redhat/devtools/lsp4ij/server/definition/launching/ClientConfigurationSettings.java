@@ -54,12 +54,6 @@ public class ClientConfigurationSettings {
         public FormattingScope formatOnCloseBraceScope = FormattingScope.CODE_BLOCK;
 
         /**
-         * Whether or not to degrade gracefully to the entire file if a more constrained scope cannot be found when
-         * formatting on close brace. Defaults to false.
-         */
-        public boolean formatOnCloseBraceDegradeGracefully = false;
-
-        /**
          * Whether or not to format on statement terminator. Defaults to false.
          */
         public boolean formatOnStatementTerminator = false;
@@ -75,12 +69,6 @@ public class ClientConfigurationSettings {
          * {@link FormattingScope#FILE FILE}. Defaults to {@link FormattingScope#STATEMENT STATEMENT}.
          */
         public FormattingScope formatOnStatementTerminatorScope = FormattingScope.STATEMENT;
-
-        /**
-         * Whether or not to degrade gracefully to the code block or entire file if a more constrained scope cannot be
-         * found when formatting on statement terminator. Defaults to false.
-         */
-        public boolean formatOnStatementTerminatorDegradeGracefully = false;
 
         /**
          * Whether or not to format on completion trigger. Defaults to false.

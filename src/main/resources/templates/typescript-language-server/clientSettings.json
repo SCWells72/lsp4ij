@@ -7,7 +7,6 @@
     "formatOnCloseBrace": true,
     "formatOnStatementTerminator": true,
     "formatOnStatementTerminatorCharacters": ";",
-    "formatOnStatementTerminatorDegradeGracefully": true,
     "formatOnCompletionTrigger": true
   },
   "workspaceSymbol": {
