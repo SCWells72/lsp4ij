@@ -11,6 +11,7 @@
 
 package com.redhat.devtools.lsp4ij.features.formatting;
 
+import com.redhat.devtools.lsp4ij.client.features.LSPFormattingFeature.FormattingScope;
 import com.redhat.devtools.lsp4ij.fixtures.LSPClientSideOnTypeFormattingFixtureTestCase;
 
 /**
@@ -24,7 +25,7 @@ public class TypeScriptClientSideOnTypeFormattingTest extends LSPClientSideOnTyp
         super("*.ts");
     }
 
-    public void testFormatOnCloseBrace() {
+    public void testFormatOnCloseBraceSimple() {
         // language=json
         String mockSelectionRangeJson = """
                 [
@@ -110,7 +111,6 @@ public class TypeScriptClientSideOnTypeFormattingTest extends LSPClientSideOnTyp
         // First test with the format-on-close-brace disabled
         assertOnTypeFormatting(
                 TEST_FILE_NAME,
-                // No language injection here because there are syntax errors
                 fileBodyBefore,
                 // language=typescript
                 """
@@ -126,7 +126,28 @@ public class TypeScriptClientSideOnTypeFormattingTest extends LSPClientSideOnTyp
                 clientConfiguration -> clientConfiguration.format.formatOnCloseBrace = false
         );
 
-        // Then test with the format-on-close-brace enabled
+        // Then test with the format-on-close-brace enabled but without support for curly braces
+        assertOnTypeFormatting(
+                TEST_FILE_NAME,
+                fileBodyBefore,
+                // language=typescript
+                """
+                        export class Foo {
+                            bar() {
+                        console.log('Hello, world.');
+                            }
+                        }
+                        """,
+                mockSelectionRangeJson,
+                mockFoldingRangeJson,
+                mockRangeFormattingJson,
+                clientConfiguration -> {
+                    clientConfiguration.format.formatOnCloseBrace = true;
+                    clientConfiguration.format.formatOnCloseBraceCharacters = "])";
+                }
+        );
+
+        // Finally test with the format-on-close-brace enabled with the default brace pairs
         assertOnTypeFormatting(
                 TEST_FILE_NAME,
                 fileBodyBefore,
@@ -141,7 +162,274 @@ public class TypeScriptClientSideOnTypeFormattingTest extends LSPClientSideOnTyp
                 mockSelectionRangeJson,
                 mockFoldingRangeJson,
                 mockRangeFormattingJson,
-                clientConfiguration -> clientConfiguration.format.formatOnCloseBrace = true
+                clientConfiguration -> {
+                    clientConfiguration.format.formatOnCloseBrace = true;
+                    clientConfiguration.format.formatOnCloseBraceCharacters = null;
+                }
+        );
+    }
+
+    public void testFormatOnCloseBraceComplex() {
+        // language=json
+        String mockSelectionRangeJson = """
+                [
+                  {
+                    "range": {
+                      "start": {
+                        "line": 4,
+                        "character": 0
+                      },
+                      "end": {
+                        "line": 4,
+                        "character": 1
+                      }
+                    },
+                    "parent": {
+                      "range": {
+                        "start": {
+                          "line": 0,
+                          "character": 0
+                        },
+                        "end": {
+                          "line": 4,
+                          "character": 1
+                        }
+                      }
+                    }
+                  }
+                ]
+                """;
+        // language=json
+        String mockFoldingRangeJson = """
+                [
+                  {
+                    "startLine": 0,
+                    "endLine": 3
+                  },
+                  {
+                    "startLine": 1,
+                    "endLine": 2
+                  }
+                ]
+                """;
+        // language=json
+        String mockRangeFormattingJson = """
+                [
+                  {
+                    "range": {
+                      "start": {
+                        "line": 1,
+                        "character": 0
+                      },
+                      "end": {
+                        "line": 1,
+                        "character": 0
+                      }
+                    },
+                    "newText": "    "
+                  },
+                  {
+                    "range": {
+                      "start": {
+                        "line": 2,
+                        "character": 0
+                      },
+                      "end": {
+                        "line": 2,
+                        "character": 0
+                      }
+                    },
+                    "newText": "        "
+                  },
+                  {
+                    "range": {
+                      "start": {
+                        "line": 3,
+                        "character": 0
+                      },
+                      "end": {
+                        "line": 3,
+                        "character": 0
+                      }
+                    },
+                    "newText": "    "
+                  }
+                ]
+                """;
+
+        // No language injection here because there are syntax errors
+        String fileBodyBefore = """
+                export class Foo {
+                bar() {
+                console.log('Hello, world.');
+                }
+                // type }
+                """;
+
+        // First test with the format-on-close-brace disabled
+        assertOnTypeFormatting(
+                TEST_FILE_NAME,
+                fileBodyBefore,
+                // language=typescript
+                """
+                        export class Foo {
+                        bar() {
+                        console.log('Hello, world.');
+                        }
+                        }
+                        """,
+                mockSelectionRangeJson,
+                mockFoldingRangeJson,
+                mockRangeFormattingJson,
+                clientConfiguration -> clientConfiguration.format.formatOnCloseBrace = false
+        );
+
+        // Then test with the format-on-close-brace enabled but without support for curly braces
+        assertOnTypeFormatting(
+                TEST_FILE_NAME,
+                fileBodyBefore,
+                // language=typescript
+                """
+                        export class Foo {
+                        bar() {
+                        console.log('Hello, world.');
+                        }
+                        }
+                        """,
+                mockSelectionRangeJson,
+                mockFoldingRangeJson,
+                mockRangeFormattingJson,
+                clientConfiguration -> {
+                    clientConfiguration.format.formatOnCloseBrace = false;
+                    clientConfiguration.format.formatOnCloseBraceCharacters = "])";
+                }
+        );
+
+        // Finally test with the format-on-close-brace enabled with the default brace pairs
+        assertOnTypeFormatting(
+                TEST_FILE_NAME,
+                fileBodyBefore,
+                // language=typescript
+                """
+                        export class Foo {
+                            bar() {
+                                console.log('Hello, world.');
+                            }
+                        }
+                        """,
+                mockSelectionRangeJson,
+                mockFoldingRangeJson,
+                mockRangeFormattingJson,
+                clientConfiguration -> {
+                    clientConfiguration.format.formatOnCloseBrace = true;
+                    clientConfiguration.format.formatOnCloseBraceCharacters = null;
+                }
+        );
+    }
+
+    public void testFormatOnCloseBraceFileScope() {
+        // language=json
+        String mockRangeFormattingJson = """
+                [
+                  {
+                    "range": {
+                      "start": {
+                        "line": 1,
+                        "character": 0
+                      },
+                      "end": {
+                        "line": 1,
+                        "character": 0
+                      }
+                    },
+                    "newText": "    "
+                  },
+                  {
+                    "range": {
+                      "start": {
+                        "line": 2,
+                        "character": 0
+                      },
+                      "end": {
+                        "line": 2,
+                        "character": 0
+                      }
+                    },
+                    "newText": "        "
+                  },
+                  {
+                    "range": {
+                      "start": {
+                        "line": 3,
+                        "character": 0
+                      },
+                      "end": {
+                        "line": 3,
+                        "character": 0
+                      }
+                    },
+                    "newText": "            "
+                  },
+                  {
+                    "range": {
+                      "start": {
+                        "line": 4,
+                        "character": 0
+                      },
+                      "end": {
+                        "line": 4,
+                        "character": 0
+                      }
+                    },
+                    "newText": "        "
+                  },
+                  {
+                    "range": {
+                      "start": {
+                        "line": 5,
+                        "character": 0
+                      },
+                      "end": {
+                        "line": 5,
+                        "character": 0
+                      }
+                    },
+                    "newText": "    "
+                  }
+                ]
+                """;
+
+        // No language injection here because there are syntax errors
+        String fileBodyBefore = """
+                export class Foo {
+                bar() {
+                if (true) {
+                console.log('Hello, world.');
+                // type }
+                }
+                }
+                """;
+
+        assertOnTypeFormatting(
+                TEST_FILE_NAME,
+                fileBodyBefore,
+                // language=typescript
+                """
+                        export class Foo {
+                            bar() {
+                                if (true) {
+                                    console.log('Hello, world.');
+                                }
+                            }
+                        }
+                        """,
+                "[]",
+                "[]",
+                mockRangeFormattingJson,
+                clientConfiguration -> {
+                    clientConfiguration.format.formatOnCloseBrace = true;
+                    clientConfiguration.format.formatOnCloseBraceScope = FormattingScope.FILE;
+                }
         );
     }
 }
