@@ -83,7 +83,7 @@ public class ClientConfigurationSettings {
     }
 
     /**
-     * Client-side code workspace symbol settings.
+     * Client-side workspace symbol settings.
      */
     public static class ClientConfigurationWorkspaceSymbolSettings {
         /**
@@ -108,7 +108,7 @@ public class ClientConfigurationSettings {
     public @NotNull ClientConfigurationFormatSettings format = new ClientConfigurationFormatSettings();
 
     /**
-     * Client-side code workspace symbol settings
+     * Client-side workspace symbol settings
      */
     public @NotNull ClientConfigurationWorkspaceSymbolSettings workspaceSymbol = new ClientConfigurationWorkspaceSymbolSettings();
 }
