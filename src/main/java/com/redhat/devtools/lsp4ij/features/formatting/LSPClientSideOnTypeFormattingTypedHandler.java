@@ -234,7 +234,7 @@ public class LSPClientSideOnTypeFormattingTypedHandler extends TypedHandlerDeleg
                                 int endLineEndOffset = document.getLineEndOffset(endLineNumber);
                                 if ((endLineEndOffset == endOffset) || (endLineEndOffset == (endOffset + 1))) {
                                     // Make sure that it ends with the terminator that was just typed
-                                    String selectionRangeText = StringUtil.trimTrailing(documentChars.subSequence(startOffset, endOffset).toString());
+                                    String selectionRangeText = StringUtil.trimTrailing(documentChars.subSequence(startOffset, endLineEndOffset).toString());
                                     return ((startOffset + selectionRangeText.length()) == offset) && selectionRangeText.endsWith(String.valueOf(statementTerminatorChar));
                                 }
                             }
