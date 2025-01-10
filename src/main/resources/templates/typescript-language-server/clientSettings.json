@@ -1,5 +1,8 @@
 {
   "caseSensitive": true,
+  "completion": {
+    "useContextAwareSorting": true
+  },
   "format": {
     "formatOnCloseBrace": true,
     "formatOnStatementTerminator": true,
