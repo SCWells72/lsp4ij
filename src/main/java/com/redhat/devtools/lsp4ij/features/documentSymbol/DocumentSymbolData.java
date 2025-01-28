@@ -10,13 +10,17 @@
  ******************************************************************************/
 package com.redhat.devtools.lsp4ij.features.documentSymbol;
 
+import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.impl.FakePsiElement;
+import com.redhat.devtools.lsp4ij.LSPIJUtils;
 import com.redhat.devtools.lsp4ij.LanguageServerItem;
 import com.redhat.devtools.lsp4ij.client.features.LSPClientFeatures;
 import org.eclipse.lsp4j.DocumentSymbol;
+import org.eclipse.lsp4j.Range;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -74,6 +78,15 @@ public class DocumentSymbolData extends FakePsiElement {
     @Override
     public int getTextOffset() {
         return getClientFeatures().getDocumentSymbolFeature().getTextOffset(documentSymbol, psiFile);
+    }
+
+    @Override
+    @Nullable
+    public TextRange getTextRange() {
+        // TODO: Compute this once in the constructor
+        Range range = documentSymbol.getRange();
+        Document document = LSPIJUtils.getDocument(psiFile);
+        return (range != null) && (document != null) ? LSPIJUtils.toTextRange(range, document) : null;
     }
 
     @Override

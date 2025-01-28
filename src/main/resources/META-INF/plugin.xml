@@ -288,6 +288,18 @@ L
                 language="textmate"
                 implementationClass="com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStructureViewFactory"/>
 
+        <breadcrumbsInfoProvider
+                id="LSPDocumentSymbolBreadcrumbsInfoProvider"
+                implementation="com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolBreadcrumbsInfoProvider"/>
+        <lang.fileViewProviderFactory
+                id="LSPDocumentSymbolViewProviderFactoryForText"
+                language="TEXT"
+                implementationClass="com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolViewProviderFactory"/>
+        <lang.fileViewProviderFactory
+                id="LSPDocumentSymbolViewProviderFactoryForTextMate"
+                language="textmate"
+                implementationClass="com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolViewProviderFactory"/>
+
         <!-- LSP textDocument/documentHighlight request support -->
         <highlightUsagesHandlerFactory
                 id="LSPHighlightUsagesHandlerFactory"
