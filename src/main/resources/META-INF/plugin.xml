@@ -265,6 +265,17 @@ L
                 id="LSPDiagnosticAnnotator"
                 language=""
                 implementationClass="com.redhat.devtools.lsp4ij.features.diagnostics.LSPDiagnosticAnnotator"/>
+        <globalInspection
+            id="LSPDiagnosticInspection"
+            language=""
+            shortName="LSPDiagnosticInspection"
+            enabledByDefault="true"
+            level="ERROR"
+            bundle="messages.LanguageServerBundle"
+            key="lsp.diagnostic.inspection.name"
+            groupBundle="messages.LanguageServerBundle"
+            groupKey="lsp.diagnostic.inspection.group"
+            implementationClass="com.redhat.devtools.lsp4ij.features.diagnostics.LSPDiagnosticInspection"/>
 
         <!-- LSP textDocument/completion request support -->
         <typedHandler id="LSPCompletionTriggerTypedHandler"

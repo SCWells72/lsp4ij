@@ -85,6 +85,29 @@ public class CompletableFutures {
     }
 
     /**
+     * Merge the given futures List<CompletableFuture<T>> in one future CompletableFuture<List<T>>.
+     *
+     * @param futures             the list of futures which return a T.
+     * @param cancellationSupport the cancellation support.
+     * @param <T>                 the merged futures.
+     * @return the future.
+     */
+    public static <T> @NotNull CompletableFuture<List<T>> mergeInOneFuture2(@NotNull List<CompletableFuture<T>> futures,
+                                                                            @NotNull CancellationSupport cancellationSupport) {
+        CompletableFuture<Void> allFutures = cancellationSupport.execute(CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])));
+        return allFutures.thenApply(Void -> {
+            List<T> mergedDataList = new ArrayList<>(futures.size());
+            for (CompletableFuture<T> dataListFuture : futures) {
+                T data = dataListFuture.join();
+                if (data != null) {
+                    mergedDataList.add(data);
+                }
+            }
+            return mergedDataList;
+        });
+    }
+
+    /**
      * Returns true if the given {@link CompletableFuture} is done normally and false otherwise.
      *
      * @param future the completable future.
