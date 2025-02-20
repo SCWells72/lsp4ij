@@ -87,6 +87,13 @@ public class LSPSemanticTokenPsiElement extends LSPPsiElement implements PsiName
     }
 
     @Override
+    public int getTextOffset() {
+        // If this is a file-level token, return the last stored file-level offset; otherwise return the default
+        return isFile ? semanticToken.getRequestedOffset() : super.getTextOffset();
+
+    }
+
+    @Override
     @NotNull
     public String getText() {
         // Optimization for full-file elements to avoid copying the full file text

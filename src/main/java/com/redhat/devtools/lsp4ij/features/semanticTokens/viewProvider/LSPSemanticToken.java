@@ -27,7 +27,7 @@ import java.util.Set;
 /**
  * Represents a concrete semantic token in a file.
  */
-final class LSPSemanticToken {
+class LSPSemanticToken {
     // Semantic token types that should be interpreted as representing identifier names
     private static final Set<String> IDENTIFIER_NAME_TOKEN_TYPES = Set.of(
             SemanticTokenTypes.Namespace,
@@ -70,6 +70,7 @@ final class LSPSemanticToken {
 
     private final LSPSemanticTokenElementType elementType;
     private volatile LSPSemanticTokenPsiElement element = null;
+    private final ThreadLocal<Integer> requestedOffset = new ThreadLocal<>();
 
     /**
      * Creates a new semantic token.
@@ -159,6 +160,25 @@ final class LSPSemanticToken {
             }
         }
         return element;
+    }
+
+    /**
+     * Stores the last requested offset for which a file-level semantic token was returned as a thread local.
+     *
+     * @param offset the last requested offset
+     */
+    void setRequestedOffset(int offset) {
+        requestedOffset.set(offset);
+    }
+
+    /**
+     * Returns the last requested offset for which a file-level semantic token was returned from a thread local.
+     *
+     * @return the last requested offset or 0 (beginning of file) if none has been stored
+     */
+    int getRequestedOffset() {
+        Integer fileLevelOffset = this.requestedOffset.get();
+        return fileLevelOffset != null ? fileLevelOffset : 0;
     }
 
     @Override

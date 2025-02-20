@@ -31,7 +31,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 
 final class LSPDocumentSymbolUtils {
     private LSPDocumentSymbolUtils() {
@@ -51,17 +50,7 @@ final class LSPDocumentSymbolUtils {
 
     @Nullable
     static DocumentSymbolData getDocumentSymbolData(@NotNull PsiElement element) {
-        PsiFile file = element.getContainingFile();
-        if (!Objects.equals(file.getTextRange(), element.getTextRange())) {
-            return getDocumentSymbolData(element, element.getTextOffset());
-        } else {
-            // TODO: This isn't really what we want. Is there not some way to derive the original offset?
-            Editor editor = LSPIJUtils.editorForElement(element);
-            if (editor != null) {
-                return getDocumentSymbolData(element, editor.getCaretModel().getOffset());
-            }
-        }
-        return null;
+        return getDocumentSymbolData(element, element.getTextOffset());
     }
 
     @Nullable

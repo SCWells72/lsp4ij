@@ -270,7 +270,7 @@ public class LSPSemanticTokensFileViewProvider extends SingleRootFileViewProvide
         // Otherwise stub a semantic token for the entire file so that it won't highlight as a link on mouse hover
         else {
             // By caching the stub on the file this way, it's automatically evicted when the file changes
-            return CachedValuesManager.getCachedValue(file, new CachedValueProvider<>() {
+            LSPSemanticToken fileLevelSemanticToken = CachedValuesManager.getCachedValue(file, new CachedValueProvider<>() {
                 @Override
                 @NotNull
                 public Result<LSPSemanticToken> compute() {
@@ -278,6 +278,9 @@ public class LSPSemanticTokensFileViewProvider extends SingleRootFileViewProvide
                     return Result.create(stubSemanticToken, file);
                 }
             });
+            // Store the requested offset for any downstream consumers on the same thread
+            fileLevelSemanticToken.setRequestedOffset(offset);
+            return fileLevelSemanticToken;
         }
     }
 }
