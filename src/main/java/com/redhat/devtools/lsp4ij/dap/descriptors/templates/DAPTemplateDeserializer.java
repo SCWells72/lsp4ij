@@ -32,22 +32,43 @@ public class DAPTemplateDeserializer implements JsonDeserializer<DAPTemplate> {
 
         dapTemplate.setId(jsonObject.get(ID_JSON_PROPERTY).getAsString());
         dapTemplate.setName(jsonObject.get(NAME_JSON_PROPERTY).getAsString());
-        JsonObject programArgs = jsonObject.get(PROGRAM_ARGS_JSON_PROPERTY).getAsJsonObject();
-        if (programArgs != null) {
-            Gson gson = new Gson();
-            Type mapType = new TypeToken<Map<String, String>>(){}.getType();
-            Map<String, String> programArgsMap = gson.fromJson(programArgs, mapType);
-            dapTemplate.setProgramArgs(programArgsMap);
+
+        // launch
+        if (jsonObject.has(LAUNCH_PROPERTY)) {
+            JsonObject programArgs = jsonObject.get(LAUNCH_PROPERTY).getAsJsonObject();
+            if (programArgs != null) {
+                Gson gson = new Gson();
+                Type mapType = new TypeToken<Map<String, String>>() {
+                }.getType();
+                Map<String, String> programArgsMap = gson.fromJson(programArgs, mapType);
+                dapTemplate.setProgramArgs(programArgsMap);
+            }
         }
 
-        JsonElement waitForTimeout = jsonObject.get(WAIT_FOR_TIMEOUT_JSON_PROPERTY);
-        if (waitForTimeout != null) {
-            dapTemplate.setWaitForTimeout(waitForTimeout.getAsString());
+        JsonElement connectTimeout = jsonObject.get(CONNECT_TIMEOUT_JSON_PROPERTY);
+        if (connectTimeout != null) {
+            try {
+                dapTemplate.setConnectTimeout(connectTimeout.getAsInt());
+            } catch (Exception e) {
+
+            }
         }
 
-        JsonElement waitForTrace = jsonObject.get(WAIT_FOR_TRACE_JSON_PROPERTY);
-        if (waitForTrace != null) {
-            dapTemplate.setWaitForTrace(waitForTrace.getAsString());
+        JsonElement debugServerReadyPattern = jsonObject.get(DEBUG_SERVER_READY_PATTERN_JSON_PROPERTY);
+        if (debugServerReadyPattern != null) {
+            dapTemplate.setDebugServerReadyPattern(debugServerReadyPattern.getAsString());
+        }
+
+        // Attach
+        JsonElement attach = jsonObject.get(ATTACH_PROPERTY);
+        if (attach != null&& attach.isJsonObject()) {
+            JsonObject attachObject = (JsonObject) attach;
+            if (attachObject.has(ATTACH_ADDRESS_PROPERTY)) {
+                dapTemplate.setAttachAddress(attachObject.get(ATTACH_ADDRESS_PROPERTY).getAsString());
+            }
+            if (attachObject.has(ATTACH_PORT_PROPERTY)) {
+                dapTemplate.setAttachPort(attachObject.get(ATTACH_PORT_PROPERTY).getAsString());
+            }
         }
 
         JsonArray fileTypeMappings = jsonObject.getAsJsonArray(FILE_TYPE_MAPPINGS_JSON_PROPERTY);

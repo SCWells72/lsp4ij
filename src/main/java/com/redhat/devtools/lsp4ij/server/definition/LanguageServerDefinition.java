@@ -170,8 +170,6 @@ public abstract class LanguageServerDefinition implements LanguageServerFactory,
         this.languageIdFileNameMatcherMappings.add(Pair.create(matchers, languageId));
     }
 
-
-
     public Map<Language, String> getLanguageMappings() {
         return languageIdLanguageMappings;
     }
@@ -332,7 +330,7 @@ public abstract class LanguageServerDefinition implements LanguageServerFactory,
         if (fileType == null) {
             return null;
         }
-        return languageIdLanguageMappings.get(fileType);
+        return languageIdFileTypeMappings.get(fileType);
     }
     /**
      * @return The language ID that this wrapper is dealing with if defined in the
