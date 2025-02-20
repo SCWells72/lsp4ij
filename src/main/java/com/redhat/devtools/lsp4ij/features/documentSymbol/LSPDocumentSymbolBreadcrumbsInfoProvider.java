@@ -21,7 +21,6 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.ui.breadcrumbs.BreadcrumbsProvider;
 import com.intellij.util.containers.ContainerUtil;
-import com.redhat.devtools.lsp4ij.LSPFileSupport;
 import com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStructureViewModel.LSPDocumentSymbolViewElement;
 import com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStructureViewModel.LSPFileStructureViewElement;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +28,10 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.plugins.textmate.TextMateLanguage;
 
 import javax.swing.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class LSPDocumentSymbolBreadcrumbsInfoProvider implements BreadcrumbsProvider {
     @Override
@@ -42,7 +44,7 @@ public class LSPDocumentSymbolBreadcrumbsInfoProvider implements BreadcrumbsProv
 
     @Override
     public boolean acceptElement(@NotNull PsiElement element) {
-        return LSPFileSupport.hasSupport(element.getContainingFile());
+        return element instanceof DocumentSymbolData;
     }
 
     @Override
@@ -50,9 +52,10 @@ public class LSPDocumentSymbolBreadcrumbsInfoProvider implements BreadcrumbsProv
     public PsiElement getParent(@NotNull PsiElement element) {
         if (element instanceof PsiFile file) {
             return file.getParent();
+        } else if (element instanceof DocumentSymbolData documentSymbolData) {
+            return documentSymbolData.getParent();
         } else {
-            DocumentSymbolData documentSymbolData = LSPDocumentSymbolUtils.getDocumentSymbolData(element);
-            return documentSymbolData != null ? documentSymbolData.getParent() : null;
+            return LSPDocumentSymbolUtils.getDocumentSymbolData(element);
         }
     }
 

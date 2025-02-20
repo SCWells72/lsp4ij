@@ -22,6 +22,7 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.util.containers.ContainerUtil;
 import com.redhat.devtools.lsp4ij.LSPIJUtils;
+import com.redhat.devtools.lsp4ij.features.semanticTokens.viewProvider.LSPSemanticTokenPsiElement;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Range;
 import org.jetbrains.annotations.NotNull;
@@ -65,8 +66,10 @@ final class LSPDocumentSymbolUtils {
     @Nullable
     static DocumentSymbolData getDocumentSymbolData(@NotNull PsiElement element) {
         Editor editor = LSPIJUtils.editorForElement(element);
-        if (editor != null) {
-            int offset = editor.getCaretModel().getOffset();
+        int offset = element instanceof LSPSemanticTokenPsiElement semanticTokenElement ? semanticTokenElement.getTextOffset() :
+                editor != null ? editor.getCaretModel().getOffset() :
+                        -1;
+        if (offset > -1) {
             return getDocumentSymbolData(element, offset);
         }
 
