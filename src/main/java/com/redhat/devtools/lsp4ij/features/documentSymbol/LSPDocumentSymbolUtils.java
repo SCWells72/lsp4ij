@@ -20,8 +20,6 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-import com.intellij.psi.util.CachedValueProvider;
-import com.intellij.psi.util.CachedValuesManager;
 import com.intellij.util.containers.ContainerUtil;
 import com.redhat.devtools.lsp4ij.LSPIJUtils;
 import com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStructureViewModel.LSPDocumentSymbolViewElement;
@@ -42,19 +40,13 @@ final class LSPDocumentSymbolUtils {
 
     @Nullable
     static LSPDocumentSymbolStructureViewModel getStructureViewModel(@NotNull PsiElement element) {
-        PsiFile file = element.getContainingFile();
-        return CachedValuesManager.getCachedValue(file, new CachedValueProvider<>() {
-            @Override
-            @Nullable
-            public Result<LSPDocumentSymbolStructureViewModel> compute() {
-                Editor editor = LSPIJUtils.editorForElement(element);
-                if (editor != null) {
-                    return Result.create(new LSPDocumentSymbolStructureViewModel(file, editor), file);
-                } else {
-                    return null;
-                }
-            }
-        });
+        Editor editor = LSPIJUtils.editorForElement(element);
+        if (editor != null) {
+            PsiFile file = element.getContainingFile();
+            return new LSPDocumentSymbolStructureViewModel(file, editor);
+        }
+
+        return null;
     }
 
     @Nullable
