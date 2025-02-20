@@ -55,6 +55,7 @@ final class LSPDocumentSymbolUtils {
         if (!Objects.equals(file.getTextRange(), element.getTextRange())) {
             return getDocumentSymbolData(element, element.getTextOffset());
         } else {
+            // TODO: This isn't really what we want. Is there not some way to derive the original offset?
             Editor editor = LSPIJUtils.editorForElement(element);
             if (editor != null) {
                 return getDocumentSymbolData(element, editor.getCaretModel().getOffset());
