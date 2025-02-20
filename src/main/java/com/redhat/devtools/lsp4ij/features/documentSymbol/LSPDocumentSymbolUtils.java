@@ -20,9 +20,12 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import com.intellij.psi.util.CachedValueProvider;
+import com.intellij.psi.util.CachedValuesManager;
 import com.intellij.util.containers.ContainerUtil;
 import com.redhat.devtools.lsp4ij.LSPIJUtils;
-import com.redhat.devtools.lsp4ij.features.semanticTokens.viewProvider.LSPSemanticTokenPsiElement;
+import com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStructureViewModel.LSPDocumentSymbolViewElement;
+import com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStructureViewModel.LSPFileStructureViewElement;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Range;
 import org.jetbrains.annotations.NotNull;
@@ -30,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 final class LSPDocumentSymbolUtils {
     private LSPDocumentSymbolUtils() {
@@ -38,17 +42,37 @@ final class LSPDocumentSymbolUtils {
 
     @Nullable
     static LSPDocumentSymbolStructureViewModel getStructureViewModel(@NotNull PsiElement element) {
-        Editor editor = LSPIJUtils.editorForElement(element);
-        if (editor != null) {
-            PsiFile file = element.getContainingFile();
-            return new LSPDocumentSymbolStructureViewModel(file, editor);
-        }
+        PsiFile file = element.getContainingFile();
+        return CachedValuesManager.getCachedValue(file, new CachedValueProvider<>() {
+            @Override
+            @Nullable
+            public Result<LSPDocumentSymbolStructureViewModel> compute() {
+                Editor editor = LSPIJUtils.editorForElement(element);
+                if (editor != null) {
+                    return Result.create(new LSPDocumentSymbolStructureViewModel(file, editor), file);
+                } else {
+                    return null;
+                }
+            }
+        });
+    }
 
+    @Nullable
+    static DocumentSymbolData getDocumentSymbolData(@NotNull PsiElement element) {
+        PsiFile file = element.getContainingFile();
+        if (!Objects.equals(file.getTextRange(), element.getTextRange())) {
+            return getDocumentSymbolData(element, element.getTextOffset());
+        } else {
+            Editor editor = LSPIJUtils.editorForElement(element);
+            if (editor != null) {
+                return getDocumentSymbolData(element, editor.getCaretModel().getOffset());
+            }
+        }
         return null;
     }
 
     @Nullable
-    static DocumentSymbolData getDocumentSymbolData(@NotNull PsiElement element, int offset) {
+    private static DocumentSymbolData getDocumentSymbolData(@NotNull PsiElement element, int offset) {
         if (element instanceof DocumentSymbolData documentSymbolData) {
             return documentSymbolData;
         }
@@ -63,29 +87,16 @@ final class LSPDocumentSymbolUtils {
         return null;
     }
 
-    @Nullable
-    static DocumentSymbolData getDocumentSymbolData(@NotNull PsiElement element) {
-        Editor editor = LSPIJUtils.editorForElement(element);
-        int offset = element instanceof LSPSemanticTokenPsiElement semanticTokenElement ? semanticTokenElement.getTextOffset() :
-                editor != null ? editor.getCaretModel().getOffset() :
-                        -1;
-        if (offset > -1) {
-            return getDocumentSymbolData(element, offset);
-        }
-
-        return null;
-    }
-
     @NotNull
     private static List<DocumentSymbolData> getContainingDocumentSymbolDatas(@NotNull PsiFile file,
                                                                              @NotNull StructureViewTreeElement structureViewTreeElement,
                                                                              int offset) {
         List<DocumentSymbolData> containingDocumentSymbolDatas = new LinkedList<>();
-        if (structureViewTreeElement instanceof LSPDocumentSymbolStructureViewModel.LSPFileStructureViewElement fileStructureViewElement) {
+        if (structureViewTreeElement instanceof LSPFileStructureViewElement fileStructureViewElement) {
             for (StructureViewTreeElement child : fileStructureViewElement.getChildren()) {
                 ContainerUtil.addAllNotNull(containingDocumentSymbolDatas, getContainingDocumentSymbolDatas(file, child, offset));
             }
-        } else if (structureViewTreeElement instanceof LSPDocumentSymbolStructureViewModel.LSPDocumentSymbolViewElement documentSymbolViewElement) {
+        } else if (structureViewTreeElement instanceof LSPDocumentSymbolViewElement documentSymbolViewElement) {
             DocumentSymbolData documentSymbolData = documentSymbolViewElement.getElement();
             DocumentSymbol documentSymbol = documentSymbolData != null ? documentSymbolData.getDocumentSymbol() : null;
             Range documentSymbolRange = documentSymbol != null ? documentSymbol.getRange() : null;
