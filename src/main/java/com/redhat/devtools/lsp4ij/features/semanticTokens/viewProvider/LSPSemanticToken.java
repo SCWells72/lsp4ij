@@ -68,9 +68,10 @@ class LSPSemanticToken {
     private final String tokenType;
     private final List<String> tokenModifiers;
 
+    private final boolean isFileLevel;
     private final LSPSemanticTokenElementType elementType;
     private volatile LSPSemanticTokenPsiElement element = null;
-    private final ThreadLocal<Integer> requestedOffset = new ThreadLocal<>();
+    private final ThreadLocal<Integer> requestedOffset = new InheritableThreadLocal<>();
 
     /**
      * Creates a new semantic token.
@@ -90,6 +91,7 @@ class LSPSemanticToken {
         this.textRange = textRange;
         this.tokenType = tokenType;
         this.tokenModifiers = tokenModifiers != null ? tokenModifiers : Collections.emptyList();
+        this.isFileLevel = Objects.equals(file.getTextRange(), textRange);
         this.elementType = getElementType(this.tokenType, this.tokenModifiers);
     }
 
@@ -111,6 +113,10 @@ class LSPSemanticToken {
     @NotNull
     List<String> getTokenModifiers() {
         return tokenModifiers;
+    }
+
+    boolean isFileLevel() {
+        return isFileLevel;
     }
 
     @NotNull

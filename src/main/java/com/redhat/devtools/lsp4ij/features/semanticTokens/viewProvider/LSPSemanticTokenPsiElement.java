@@ -31,7 +31,6 @@ import java.util.Objects;
  */
 public class LSPSemanticTokenPsiElement extends LSPPsiElement implements PsiNameIdentifierOwner {
     private final LSPSemanticToken semanticToken;
-    private final boolean isFile;
     private volatile LeafPsiElement node = null;
     private volatile String text = null;
 
@@ -42,8 +41,16 @@ public class LSPSemanticTokenPsiElement extends LSPPsiElement implements PsiName
      */
     LSPSemanticTokenPsiElement(@NotNull LSPSemanticToken semanticToken) {
         super(semanticToken.getFile(), semanticToken.getTextRange());
-        this.isFile = Objects.equals(semanticToken.getFile().getTextRange(), semanticToken.getTextRange());
         this.semanticToken = semanticToken;
+    }
+
+    /**
+     * Returns whether or not this element represents the full range of the containing file.
+     *
+     * @return true if the element is for the entire containing file, otherwise false
+     */
+    public boolean isFileLevel() {
+        return semanticToken.isFileLevel();
     }
 
     @Override
@@ -87,17 +94,10 @@ public class LSPSemanticTokenPsiElement extends LSPPsiElement implements PsiName
     }
 
     @Override
-    public int getTextOffset() {
-        // If this is a file-level token, return the last stored file-level offset; otherwise return the default
-        return isFile ? semanticToken.getRequestedOffset() : super.getTextOffset();
-
-    }
-
-    @Override
     @NotNull
     public String getText() {
         // Optimization for full-file elements to avoid copying the full file text
-        if (isFile) return getContainingFile().getText();
+        if (isFileLevel()) return getContainingFile().getText();
 
         // This is lazy-initialized because to avoid having to derive it until/unless needed
         if (text == null) {
@@ -126,6 +126,15 @@ public class LSPSemanticTokenPsiElement extends LSPPsiElement implements PsiName
         }
 
         return text;
+    }
+
+    /**
+     * Returns the last requested offset for a file-level element.
+     *
+     * @return the last requested offset
+     */
+    public int getRequestedOffset() {
+        return semanticToken.getRequestedOffset();
     }
 
     @Nullable

@@ -24,6 +24,7 @@ import com.intellij.util.containers.ContainerUtil;
 import com.redhat.devtools.lsp4ij.LSPIJUtils;
 import com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStructureViewModel.LSPDocumentSymbolViewElement;
 import com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStructureViewModel.LSPFileStructureViewElement;
+import com.redhat.devtools.lsp4ij.features.semanticTokens.viewProvider.LSPSemanticTokenPsiElement;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Range;
 import org.jetbrains.annotations.NotNull;
@@ -50,7 +51,11 @@ final class LSPDocumentSymbolUtils {
 
     @Nullable
     static DocumentSymbolData getDocumentSymbolData(@NotNull PsiElement element) {
-        return getDocumentSymbolData(element, element.getTextOffset());
+        // Special handling for file-level semantic token-based elements
+        int offset = (element instanceof LSPSemanticTokenPsiElement semanticTokenElement) && semanticTokenElement.isFileLevel() ?
+                semanticTokenElement.getRequestedOffset() :
+                element.getTextOffset();
+        return getDocumentSymbolData(element, offset);
     }
 
     @Nullable
