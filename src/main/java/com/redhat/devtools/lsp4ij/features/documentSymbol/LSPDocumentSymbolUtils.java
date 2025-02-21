@@ -51,9 +51,8 @@ final class LSPDocumentSymbolUtils {
 
     @Nullable
     static DocumentSymbolData getDocumentSymbolData(@NotNull PsiElement element) {
-        // Special handling for file-level semantic token-based elements
-        int offset = (element instanceof LSPSemanticTokenPsiElement semanticTokenElement) && semanticTokenElement.isFileLevel() ?
-                semanticTokenElement.getRequestedOffset() :
+        int offset = element instanceof LSPSemanticTokenPsiElement semanticTokenElement ?
+                semanticTokenElement.getEffectiveTextOffset() :
                 element.getTextOffset();
         return getDocumentSymbolData(element, offset);
     }

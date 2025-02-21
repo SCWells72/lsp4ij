@@ -129,12 +129,13 @@ public class LSPSemanticTokenPsiElement extends LSPPsiElement implements PsiName
     }
 
     /**
-     * Returns the last requested offset for a file-level element.
+     * Returns the effective text offset of the element. For a file-level element, this is the requested offset, and
+     * for a non-file-level element, it's the text offset.
      *
-     * @return the last requested offset
+     * @return the element's effective text offset
      */
-    public int getRequestedOffset() {
-        return semanticToken.getRequestedOffset();
+    public int getEffectiveTextOffset() {
+        return isFileLevel() ? semanticToken.getRequestedOffset() : getTextOffset();
     }
 
     @Nullable
