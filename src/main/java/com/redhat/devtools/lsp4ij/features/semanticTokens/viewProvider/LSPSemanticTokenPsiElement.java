@@ -44,13 +44,9 @@ public class LSPSemanticTokenPsiElement extends LSPPsiElement implements PsiName
         this.semanticToken = semanticToken;
     }
 
-    /**
-     * Returns whether or not this element represents the full range of the containing file.
-     *
-     * @return true if the element is for the entire containing file, otherwise false
-     */
-    public boolean isFileLevel() {
-        return semanticToken.isFileLevel();
+    int getEffectiveTextOffset() {
+        int lastRequestedOffset = semanticToken.getLastRequestedOffset();
+        return lastRequestedOffset > -1 ? lastRequestedOffset : getTextOffset();
     }
 
     @Override
@@ -97,7 +93,7 @@ public class LSPSemanticTokenPsiElement extends LSPPsiElement implements PsiName
     @NotNull
     public String getText() {
         // Optimization for full-file elements to avoid copying the full file text
-        if (isFileLevel()) return getContainingFile().getText();
+        if (semanticToken.isFileLevel()) return getContainingFile().getText();
 
         // This is lazy-initialized because to avoid having to derive it until/unless needed
         if (text == null) {
@@ -126,16 +122,6 @@ public class LSPSemanticTokenPsiElement extends LSPPsiElement implements PsiName
         }
 
         return text;
-    }
-
-    /**
-     * Returns the effective text offset of the element. For a file-level element, this is the requested offset, and
-     * for a non-file-level element, it's the text offset.
-     *
-     * @return the element's effective text offset
-     */
-    public int getEffectiveTextOffset() {
-        return isFileLevel() ? semanticToken.getRequestedOffset() : getTextOffset();
     }
 
     @Nullable

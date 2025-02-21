@@ -35,6 +35,8 @@ import java.util.Map;
 @ApiStatus.Internal
 public class LSPSemanticTokensFileViewProvider extends SingleRootFileViewProvider {
 
+    private final ThreadLocal<Integer> effectiveOffsetPtr = new InheritableThreadLocal<>();
+
     /**
      * Creates a new file view provider.
      *
@@ -51,13 +53,14 @@ public class LSPSemanticTokensFileViewProvider extends SingleRootFileViewProvide
     }
 
     /**
-     * Returns the semantic tokens file view provider for the provided PSI file if assignable and enabled.
+     * Returns the semantic tokens file view provider for the provided element if assignable and enabled.
      *
-     * @param file the PSI file
+     * @param element the PSI element
      * @return the semantic tokens file view provider if assignable and enabled; otherwise false
      */
     @ApiStatus.Internal
-    public static LSPSemanticTokensFileViewProvider getInstance(@Nullable PsiFile file) {
+    public static LSPSemanticTokensFileViewProvider getInstance(@Nullable PsiElement element) {
+        PsiFile file = element != null ? element.getContainingFile() : null;
         FileViewProvider fileViewProvider = file != null ? file.getViewProvider() : null;
         return ((fileViewProvider instanceof LSPSemanticTokensFileViewProvider semanticTokensFileViewProvider) &&
                 semanticTokensFileViewProvider.isEnabled()) ?
@@ -75,7 +78,7 @@ public class LSPSemanticTokensFileViewProvider extends SingleRootFileViewProvide
         // There should only be one PSI file
         List<PsiFile> allFiles = getAllFiles();
         PsiFile file = allFiles.size() == 1 ? ContainerUtil.getFirstItem(allFiles) : null;
-        return (file != null) && EditorBehaviorFeature.enableTextMateFileViewProvider(file) ? file : null;
+        return (file != null) && file.isValid() && EditorBehaviorFeature.enableTextMateFileViewProvider(file) ? file : null;
     }
 
     @Override
@@ -265,7 +268,10 @@ public class LSPSemanticTokensFileViewProvider extends SingleRootFileViewProvide
         // If this file has semantic tokens, use them
         Map<Integer, LSPSemanticToken> semanticTokensByOffset = getSemanticTokensByOffset();
         if (!ContainerUtil.isEmpty(semanticTokensByOffset)) {
-            return semanticTokensByOffset.get(offset);
+            LSPSemanticToken semanticToken = semanticTokensByOffset.get(offset);
+            // Update the view provider's effective requested offset as appropriate
+            setEffectiveOffset(semanticToken == null ? offset : -1);
+            return semanticToken;
         }
         // Otherwise stub a semantic token for the entire file so that it won't highlight as a link on mouse hover
         else {
@@ -278,9 +284,52 @@ public class LSPSemanticTokensFileViewProvider extends SingleRootFileViewProvide
                     return Result.create(stubSemanticToken, file);
                 }
             });
-            // Store the requested offset for any downstream consumers on the same thread
-            fileLevelSemanticToken.setRequestedOffset(offset);
+            // Update the file-level token's requested offset
+            fileLevelSemanticToken.setLastRequestedOffset(offset);
             return fileLevelSemanticToken;
         }
+    }
+
+    /**
+     * Stores the effective offset as a thread local.
+     *
+     * @param offset the effective offset
+     */
+    private void setEffectiveOffset(int offset) {
+        effectiveOffsetPtr.set(offset);
+    }
+
+    /**
+     * Returns the effective offset for the provided element.
+     *
+     * @param element the element
+     * @return the element's effective offset or -1 if none is available
+     */
+    @ApiStatus.Internal
+    public int getEffectiveOffset(@NotNull PsiElement element) {
+        PsiFile file = getFile();
+        if (file != null) {
+            int effectiveOffset = -1;
+
+            // First try to get it from the element; this will generally be for a TextMate file with no semantic tokens
+            if ((element instanceof LSPSemanticTokenPsiElement semanticTokenElement) &&
+                (element.getContainingFile().getViewProvider() == this)) {
+                effectiveOffset = semanticTokenElement.getEffectiveTextOffset();
+            }
+
+            // Failing that, try to get it from the view provider; this will generally for a TextMate file with semantic
+            // tokens but the provided element doesn't correspond to one
+            Integer viewProviderEffectiveOffset = effectiveOffsetPtr.get();
+            if (viewProviderEffectiveOffset != null) {
+                effectiveOffset = viewProviderEffectiveOffset;
+            }
+
+            // If we have a valid offset for the file, return it
+            if ((effectiveOffset > -1) && file.getTextRange().contains(effectiveOffset)) {
+                return effectiveOffset;
+            }
+        }
+
+        return -1;
     }
 }

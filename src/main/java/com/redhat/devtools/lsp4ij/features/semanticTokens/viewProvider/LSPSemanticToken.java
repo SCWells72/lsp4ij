@@ -71,7 +71,7 @@ class LSPSemanticToken {
     private final boolean isFileLevel;
     private final LSPSemanticTokenElementType elementType;
     private volatile LSPSemanticTokenPsiElement element = null;
-    private final ThreadLocal<Integer> requestedOffset = new InheritableThreadLocal<>();
+    private final ThreadLocal<Integer> lastRequestedOffsetPtr = new InheritableThreadLocal<>();
 
     /**
      * Creates a new semantic token.
@@ -173,18 +173,20 @@ class LSPSemanticToken {
      *
      * @param offset the last requested offset
      */
-    void setRequestedOffset(int offset) {
-        requestedOffset.set(offset);
+    void setLastRequestedOffset(int offset) {
+        if (isFileLevel) {
+            lastRequestedOffsetPtr.set(offset);
+        }
     }
 
     /**
      * Returns the last requested offset for which a file-level semantic token was returned from a thread local.
      *
-     * @return the last requested offset or 0 (beginning of file) if none has been stored
+     * @return the last requested offset or -1 if none has been stored
      */
-    int getRequestedOffset() {
-        Integer fileLevelOffset = this.requestedOffset.get();
-        return fileLevelOffset != null ? fileLevelOffset : 0;
+    int getLastRequestedOffset() {
+        Integer lastRequestedOffset = isFileLevel ? lastRequestedOffsetPtr.get() : null;
+        return lastRequestedOffset != null ? lastRequestedOffset : -1;
     }
 
     @Override
