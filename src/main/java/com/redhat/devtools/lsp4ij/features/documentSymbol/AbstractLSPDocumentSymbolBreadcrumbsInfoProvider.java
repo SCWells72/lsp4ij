@@ -16,10 +16,14 @@ package com.redhat.devtools.lsp4ij.features.documentSymbol;
 
 import com.intellij.ide.structureView.StructureViewTreeElement;
 import com.intellij.lang.Language;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.ui.breadcrumbs.BreadcrumbsProvider;
 import com.intellij.util.containers.ContainerUtil;
+import com.redhat.devtools.lsp4ij.LanguageServiceAccessor;
+import com.redhat.devtools.lsp4ij.ServerStatus;
 import com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStructureViewModel.LSPDocumentSymbolViewElement;
 import com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStructureViewModel.LSPFileStructureViewElement;
 import org.jetbrains.annotations.NotNull;
@@ -48,6 +52,26 @@ public abstract class AbstractLSPDocumentSymbolBreadcrumbsInfoProvider implement
         this.languages = languages;
     }
 
+    /**
+     * Determines whether or not this feature is supported for the provided element.
+     *
+     * @param element the element
+     * @return true if the feature is supported, otherwise false
+     */
+    protected boolean isSupported(@NotNull PsiElement element) {
+        Project project = element.getProject();
+        PsiFile file = element.getContainingFile();
+        VirtualFile virtualFile = file.getVirtualFile();
+        return LanguageServiceAccessor.getInstance(project).hasAny(
+                virtualFile,
+                // Don't start a language server for breadcrumbs
+                ls -> (ls.getServerStatus() == ServerStatus.started) &&
+                      ls.getClientFeatures().getDocumentSymbolFeature().isEnabled(file) &&
+                      ls.getClientFeatures().getDocumentSymbolFeature().isSupported(file)
+                // TODO: Should also check a client config feature flag
+        );
+    }
+
     @Override
     public Language[] getLanguages() {
         return languages;
@@ -55,41 +79,48 @@ public abstract class AbstractLSPDocumentSymbolBreadcrumbsInfoProvider implement
 
     @Override
     public boolean acceptElement(@NotNull PsiElement element) {
+        // NOTE: This is only used to determine which already-vetted elements should be included in the breadcrumb trail
         return element instanceof DocumentSymbolData;
     }
 
     @Override
     @Nullable
     public PsiElement getParent(@NotNull PsiElement element) {
-        if (element instanceof PsiFile file) {
-            return file.getParent();
-        } else if (element instanceof DocumentSymbolData documentSymbolData) {
-            return documentSymbolData.getParent();
-        } else {
-            return LSPDocumentSymbolUtils.getDocumentSymbolData(element);
+        if (isSupported(element)) {
+            if (element instanceof PsiFile file) {
+                return file.getParent();
+            } else if (element instanceof DocumentSymbolData documentSymbolData) {
+                return documentSymbolData.getParent();
+            } else {
+                return LSPDocumentSymbolUtils.getDocumentSymbolData(element);
+            }
         }
+
+        return null;
     }
 
     @Override
     @NotNull
     public List<PsiElement> getChildren(@NotNull PsiElement element) {
-        if (element instanceof PsiFile file) {
-            LSPDocumentSymbolStructureViewModel structureViewModel = LSPDocumentSymbolUtils.getStructureViewModel(file);
-            StructureViewTreeElement root = structureViewModel != null ? structureViewModel.getRoot() : null;
-            if (root instanceof LSPFileStructureViewElement fileStructureViewElement) {
-                StructureViewTreeElement[] children = fileStructureViewElement.getChildren();
-                List<PsiElement> childElements = new ArrayList<>(children.length);
-                for (StructureViewTreeElement child : children) {
-                    if (child instanceof LSPDocumentSymbolViewElement documentSymbolViewElement) {
-                        ContainerUtil.addIfNotNull(childElements, documentSymbolViewElement.getElement());
+        if (isSupported(element)) {
+            if (element instanceof PsiFile file) {
+                LSPDocumentSymbolStructureViewModel structureViewModel = LSPDocumentSymbolUtils.getStructureViewModel(file);
+                StructureViewTreeElement root = structureViewModel != null ? structureViewModel.getRoot() : null;
+                if (root instanceof LSPFileStructureViewElement fileStructureViewElement) {
+                    StructureViewTreeElement[] children = fileStructureViewElement.getChildren();
+                    List<PsiElement> childElements = new ArrayList<>(children.length);
+                    for (StructureViewTreeElement child : children) {
+                        if (child instanceof LSPDocumentSymbolViewElement documentSymbolViewElement) {
+                            ContainerUtil.addIfNotNull(childElements, documentSymbolViewElement.getElement());
+                        }
                     }
+                    return childElements;
                 }
-                return childElements;
-            }
-        } else {
-            DocumentSymbolData documentSymbolData = LSPDocumentSymbolUtils.getDocumentSymbolData(element);
-            if (documentSymbolData != null) {
-                return Arrays.asList(documentSymbolData.getChildren());
+            } else {
+                DocumentSymbolData documentSymbolData = LSPDocumentSymbolUtils.getDocumentSymbolData(element);
+                if (documentSymbolData != null) {
+                    return Arrays.asList(documentSymbolData.getChildren());
+                }
             }
         }
 
@@ -99,14 +130,16 @@ public abstract class AbstractLSPDocumentSymbolBreadcrumbsInfoProvider implement
     @Override
     @NotNull
     public String getElementInfo(@NotNull PsiElement element) {
-        if (element instanceof PsiFile file) {
-            return file.getName();
-        } else {
-            DocumentSymbolData documentSymbolData = LSPDocumentSymbolUtils.getDocumentSymbolData(element);
-            if (documentSymbolData != null) {
-                String presentableText = documentSymbolData.getPresentableText();
-                String name = documentSymbolData.getName();
-                return presentableText != null ? presentableText : name != null ? name : "";
+        if (isSupported(element)) {
+            if (element instanceof PsiFile file) {
+                return file.getName();
+            } else {
+                DocumentSymbolData documentSymbolData = LSPDocumentSymbolUtils.getDocumentSymbolData(element);
+                if (documentSymbolData != null) {
+                    String presentableText = documentSymbolData.getPresentableText();
+                    String name = documentSymbolData.getName();
+                    return presentableText != null ? presentableText : name != null ? name : "";
+                }
             }
         }
 
@@ -116,15 +149,17 @@ public abstract class AbstractLSPDocumentSymbolBreadcrumbsInfoProvider implement
     @Override
     @Nullable
     public String getElementTooltip(@NotNull PsiElement element) {
-        if (element instanceof PsiFile) return null;
-        return getElementInfo(element);
+        return !(element instanceof PsiFile) && isSupported(element) ? getElementInfo(element) : null;
     }
 
     @Override
     @Nullable
     public Icon getElementIcon(@NotNull PsiElement element) {
-        if (element instanceof PsiFile) return null;
-        DocumentSymbolData documentSymbolData = LSPDocumentSymbolUtils.getDocumentSymbolData(element);
-        return documentSymbolData != null ? documentSymbolData.getIcon(false) : null;
+        if (!(element instanceof PsiFile) && isSupported(element)) {
+            DocumentSymbolData documentSymbolData = LSPDocumentSymbolUtils.getDocumentSymbolData(element);
+            return documentSymbolData != null ? documentSymbolData.getIcon(false) : null;
+        }
+
+        return null;
     }
 }
