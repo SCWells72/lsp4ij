@@ -67,6 +67,11 @@ public class ClientConfigurationSettings {
          * Whether or not the custom file view provider for TextMate files is enabled. Defaults to true.
          */
         public boolean enableTextMateFileViewProvider = true;
+
+        /**
+         * Whether or not the document symbols-based breadcrumbs info provider is enabled. Defaults to true.
+         */
+        public boolean enableDocumentSymbolsBasedBreadcrumbs = true;
     }
 
     /**

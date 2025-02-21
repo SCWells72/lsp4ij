@@ -88,6 +88,12 @@
           "title": "Enable TextMate file view provider",
           "description": "Whether or not the custom file view provider for TextMate files is enabled.",
           "default": true
+        },
+        "enableDocumentSymbolsBasedBreadcrumbs": {
+          "type": "boolean",
+          "title": "Enable breadcrumbs",
+          "description": "Whether or not document symbols-based breadcrumbs info provider is enabled.",
+          "default": true
         }
       }
     },

@@ -24,12 +24,13 @@ import com.intellij.ui.breadcrumbs.BreadcrumbsProvider;
 import com.intellij.util.containers.ContainerUtil;
 import com.redhat.devtools.lsp4ij.LanguageServiceAccessor;
 import com.redhat.devtools.lsp4ij.ServerStatus;
+import com.redhat.devtools.lsp4ij.client.features.EditorBehaviorFeature;
 import com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStructureViewModel.LSPDocumentSymbolViewElement;
 import com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStructureViewModel.LSPFileStructureViewElement;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.swing.*;
+import javax.swing.Icon;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -66,9 +67,11 @@ public abstract class AbstractLSPDocumentSymbolBreadcrumbsInfoProvider implement
                 virtualFile,
                 // Don't start a language server for breadcrumbs
                 ls -> (ls.getServerStatus() == ServerStatus.started) &&
+                      // The document symbols feature must be available for the file's language server
                       ls.getClientFeatures().getDocumentSymbolFeature().isEnabled(file) &&
-                      ls.getClientFeatures().getDocumentSymbolFeature().isSupported(file)
-                // TODO: Should also check a client config feature flag
+                      ls.getClientFeatures().getDocumentSymbolFeature().isSupported(file) &&
+                      // And this feature must be enabled
+                      EditorBehaviorFeature.enableDocumentSymbolsBasedBreadcrumbs(file)
         );
     }
 

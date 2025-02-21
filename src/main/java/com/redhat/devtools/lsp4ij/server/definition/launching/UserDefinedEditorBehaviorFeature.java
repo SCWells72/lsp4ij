@@ -69,4 +69,11 @@ public class UserDefinedEditorBehaviorFeature extends EditorBehaviorFeature {
         // Note that this defaults to enabled for user-defined language server definitions
         return (editorSettings == null) || editorSettings.enableTextMateFileViewProvider;
     }
+
+    @Override
+    public boolean isEnableDocumentSymbolsBasedBreadcrumbs(@NotNull PsiFile file) {
+        ClientConfigurationEditorSettings editorSettings = getEditorSettings();
+        // Note that this defaults to enabled for user-defined language server definitions
+        return (editorSettings == null) || editorSettings.enableDocumentSymbolsBasedBreadcrumbs;
+    }
 }

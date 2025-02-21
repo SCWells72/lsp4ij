@@ -551,6 +551,7 @@ Unlike the features above, `LSPEditorFeature` does **not** correspond to an LSP 
 | boolean isEnableEnterBetweenBracesFix(PsiFile file)            | Returns `true` if the fix for [IJPL-159454](https://youtrack.jetbrains.com/issue/IJPL-159454) is enabled and `false` otherwise.   | `true` for user-defined language server definitions; otherwise `false` |
 | boolean isEnableTextMateNestedBracesImprovements(PsiFile file) | Returns `true` if editor improvements for nested braces/brackets/parentheses in TextMate files are enabled and `false` otherwise. | `true` for user-defined language server definitions; otherwise `false` |
 | boolean isEnableTextMateFileViewProvider(PsiFile file)         | Returns `true` if the custom file view provider for TextMate files is enabled and `false` otherwise.                              | `true` for user-defined language server definitions; otherwise `false` |
+| boolean isEnableDocumentSymbolsBasedBreadcrumbs(PsiFile file)  | Returns `true` if the the document symbols-based breadcrumbs info provider is enabled and `false` otherwise.                      | `true` for user-defined language server definitions; otherwise `false` |
 =======
 
 ## Language server installer
