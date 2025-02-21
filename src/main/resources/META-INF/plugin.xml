@@ -302,7 +302,7 @@
 
         <breadcrumbsInfoProvider
                 id="LSPDocumentSymbolBreadcrumbsInfoProvider"
-                implementation="com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolBreadcrumbsInfoProvider"/>
+                implementation="com.redhat.devtools.lsp4ij.features.documentSymbol.LSPTextMateDocumentSymbolBreadcrumbsInfoProvider"/>
 
         <!-- LSP textDocument/documentHighlight request support -->
         <highlightUsagesHandlerFactory

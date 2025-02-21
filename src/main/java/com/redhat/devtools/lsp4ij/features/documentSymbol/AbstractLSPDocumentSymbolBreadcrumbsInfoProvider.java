@@ -16,7 +16,6 @@ package com.redhat.devtools.lsp4ij.features.documentSymbol;
 
 import com.intellij.ide.structureView.StructureViewTreeElement;
 import com.intellij.lang.Language;
-import com.intellij.openapi.fileTypes.PlainTextLanguage;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.ui.breadcrumbs.BreadcrumbsProvider;
@@ -25,7 +24,6 @@ import com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStruc
 import com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStructureViewModel.LSPFileStructureViewElement;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.plugins.textmate.TextMateLanguage;
 
 import javax.swing.*;
 import java.util.ArrayList;
@@ -33,13 +31,26 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class LSPDocumentSymbolBreadcrumbsInfoProvider implements BreadcrumbsProvider {
+/**
+ * Abstract base class that can be extended for custom language servers to add document symbol-based breadcrumbs.
+ * Concrete subclasses must have a no-arg constructor that specifies the language(s) for the language server's
+ * files and must be registered as a <code>breadcrumbsInfoProvider</code> in <code>plugin.xml</code>.
+ */
+public abstract class AbstractLSPDocumentSymbolBreadcrumbsInfoProvider implements BreadcrumbsProvider {
+
+    private final Language[] languages;
+
+    /**
+     * Creates the document symbol-based breadcrumbs info provider for the specified language(s).
+     * @param languages the language(s)
+     */
+    protected AbstractLSPDocumentSymbolBreadcrumbsInfoProvider(@NotNull Language... languages) {
+        this.languages = languages;
+    }
+
     @Override
     public Language[] getLanguages() {
-        return new Language[]{
-                PlainTextLanguage.INSTANCE,
-                TextMateLanguage.LANGUAGE
-        };
+        return languages;
     }
 
     @Override
@@ -106,7 +117,6 @@ public class LSPDocumentSymbolBreadcrumbsInfoProvider implements BreadcrumbsProv
     @Nullable
     public String getElementTooltip(@NotNull PsiElement element) {
         if (element instanceof PsiFile) return null;
-        // TODO: Ideally the tooltip would include the full signature
         return getElementInfo(element);
     }
 
