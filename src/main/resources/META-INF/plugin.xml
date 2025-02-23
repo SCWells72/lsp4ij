@@ -432,7 +432,8 @@
         <!-- LSP textDocument/semanticTokens request support -->
         <highlightVisitor
                 id="LSPSemanticTokensHighlightVisitor"
-                implementation="com.redhat.devtools.lsp4ij.features.semanticTokens.LSPSemanticTokensHighlightVisitor"/>
+                implementation="com.redhat.devtools.lsp4ij.features.semanticTokens.LSPSemanticTokensHighlightVisitor"
+                order="first"/>
         <colorSettingsPage
                 implementation="com.redhat.devtools.lsp4ij.features.semanticTokens.SemanticTokensColorSettingsPage"/>
 
