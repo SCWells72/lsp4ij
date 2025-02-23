@@ -16,7 +16,6 @@ package com.redhat.devtools.lsp4ij.features.documentSymbol;
 
 import com.intellij.openapi.fileTypes.PlainTextLanguage;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiFile;
 import com.redhat.devtools.lsp4ij.LSPIJEditorUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,11 +30,6 @@ public class LSPAbstractFileTypeDocumentSymbolBreadcrumbsInfoProvider extends Ab
 
     @Override
     protected boolean isSupported(@NotNull PsiElement element) {
-        PsiFile file = element.getContainingFile();
-        if (!LSPIJEditorUtils.isSupportedAbstractFileTypeFile(file)) {
-            return false;
-        }
-
-        return super.isSupported(element);
+        return LSPIJEditorUtils.isSupportedAbstractFileTypeFile(element.getContainingFile()) && super.isSupported(element);
     }
 }
