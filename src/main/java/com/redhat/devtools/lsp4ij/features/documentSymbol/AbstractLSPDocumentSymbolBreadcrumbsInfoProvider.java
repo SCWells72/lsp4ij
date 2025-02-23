@@ -23,7 +23,6 @@ import com.intellij.psi.PsiFile;
 import com.intellij.ui.breadcrumbs.BreadcrumbsProvider;
 import com.intellij.util.containers.ContainerUtil;
 import com.redhat.devtools.lsp4ij.LanguageServiceAccessor;
-import com.redhat.devtools.lsp4ij.ServerStatus;
 import com.redhat.devtools.lsp4ij.client.features.EditorBehaviorFeature;
 import com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStructureViewModel.LSPDocumentSymbolViewElement;
 import com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStructureViewModel.LSPFileStructureViewElement;
@@ -47,6 +46,7 @@ public abstract class AbstractLSPDocumentSymbolBreadcrumbsInfoProvider implement
 
     /**
      * Creates the document symbol-based breadcrumbs info provider for the specified language(s).
+     *
      * @param languages the language(s)
      */
     protected AbstractLSPDocumentSymbolBreadcrumbsInfoProvider(@NotNull Language... languages) {
@@ -65,13 +65,12 @@ public abstract class AbstractLSPDocumentSymbolBreadcrumbsInfoProvider implement
         VirtualFile virtualFile = file.getVirtualFile();
         return LanguageServiceAccessor.getInstance(project).hasAny(
                 virtualFile,
-                // Don't start a language server for breadcrumbs
-                ls -> (ls.getServerStatus() == ServerStatus.started) &&
-                      // The document symbols feature must be available for the file's language server
-                      ls.getClientFeatures().getDocumentSymbolFeature().isEnabled(file) &&
-                      ls.getClientFeatures().getDocumentSymbolFeature().isSupported(file) &&
-                      // And this feature must be enabled
-                      EditorBehaviorFeature.enableDocumentSymbolsBasedBreadcrumbs(file)
+                ls ->
+                        // The document symbols feature must be available for the file's language server
+                        ls.getClientFeatures().getDocumentSymbolFeature().isEnabled(file) &&
+                        ls.getClientFeatures().getDocumentSymbolFeature().isSupported(file) &&
+                        // And this feature must be enabled
+                        EditorBehaviorFeature.enableDocumentSymbolsBasedBreadcrumbs(file)
         );
     }
 
