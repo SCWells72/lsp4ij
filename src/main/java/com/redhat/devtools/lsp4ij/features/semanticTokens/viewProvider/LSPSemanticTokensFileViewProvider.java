@@ -29,8 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A {@link FileViewProvider} for an LSP-backed TextMate file where elements are derived dynamically from reported
- * semantic tokens.
+ * A {@link FileViewProvider} for an LSP-backed file where elements are derived dynamically from reported semantic tokens.
  */
 @ApiStatus.Internal
 public class LSPSemanticTokensFileViewProvider extends SingleRootFileViewProvider {
@@ -38,7 +37,7 @@ public class LSPSemanticTokensFileViewProvider extends SingleRootFileViewProvide
     private final ThreadLocal<Integer> effectiveOffsetPtr = new InheritableThreadLocal<>();
 
     /**
-     * Creates a new file view provider.
+     * Creates a new file view provider based on language.
      *
      * @param psiManager         the PSI manager
      * @param virtualFile        the virtual file
@@ -50,6 +49,19 @@ public class LSPSemanticTokensFileViewProvider extends SingleRootFileViewProvide
                                       boolean eventSystemEnabled,
                                       @NotNull Language language) {
         super(psiManager, virtualFile, eventSystemEnabled, language);
+    }
+
+    /**
+     * Creates a new file view provider based on file type.
+     *
+     * @param psiManager         the PSI manager
+     * @param virtualFile        the virtual file
+     * @param eventSystemEnabled whether or not the event system is enabled
+     */
+    LSPSemanticTokensFileViewProvider(@NotNull PsiManager psiManager,
+                                      @NotNull VirtualFile virtualFile,
+                                      boolean eventSystemEnabled) {
+        super(psiManager, virtualFile, eventSystemEnabled);
     }
 
     /**
