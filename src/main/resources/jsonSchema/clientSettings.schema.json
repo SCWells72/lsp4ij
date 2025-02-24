@@ -89,7 +89,7 @@
           "description": "Whether or not the semantic tokens-based file view provider is enabled.",
           "default": true
         },
-        "enableDocumentSymbolsBasedBreadcrumbs": {
+        "enableDocumentSymbolsBreadcrumbsInfoProvider": {
           "type": "boolean",
           "title": "Enable breadcrumbs",
           "description": "Whether or not document symbols-based breadcrumbs info provider is enabled.",

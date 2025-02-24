@@ -71,7 +71,7 @@ public class ClientConfigurationSettings {
         /**
          * Whether or not the document symbols-based breadcrumbs info provider is enabled. Defaults to true.
          */
-        public boolean enableDocumentSymbolsBasedBreadcrumbs = true;
+        public boolean enableDocumentSymbolsBreadcrumbsInfoProvider = true;
     }
 
     /**

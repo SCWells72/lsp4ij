@@ -70,7 +70,7 @@ public abstract class AbstractLSPDocumentSymbolBreadcrumbsInfoProvider implement
                         ls.getClientFeatures().getDocumentSymbolFeature().isEnabled(file) &&
                         ls.getClientFeatures().getDocumentSymbolFeature().isSupported(file) &&
                         // And this feature must be enabled
-                        EditorBehaviorFeature.enableDocumentSymbolsBasedBreadcrumbs(file)
+                        EditorBehaviorFeature.enableDocumentSymbolsBreadcrumbsInfoProvider(file)
         );
     }
 

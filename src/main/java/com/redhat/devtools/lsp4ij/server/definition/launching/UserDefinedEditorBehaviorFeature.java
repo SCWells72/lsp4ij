@@ -71,9 +71,9 @@ public class UserDefinedEditorBehaviorFeature extends EditorBehaviorFeature {
     }
 
     @Override
-    public boolean isEnableDocumentSymbolsBasedBreadcrumbs(@NotNull PsiFile file) {
+    public boolean isEnableDocumentSymbolsBreadcrumbsInfoProvider(@NotNull PsiFile file) {
         ClientConfigurationEditorSettings editorSettings = getEditorSettings();
         // Note that this defaults to enabled for user-defined language server definitions
-        return (editorSettings == null) || editorSettings.enableDocumentSymbolsBasedBreadcrumbs;
+        return (editorSettings == null) || editorSettings.enableDocumentSymbolsBreadcrumbsInfoProvider;
     }
 }
