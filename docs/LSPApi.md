@@ -511,6 +511,53 @@ public class MyLSPSemanticTokensFeature extends LSPSemanticTokensFeature {
 }
 ```
 
+### Semantic Tokens File View Providers
+
+LSP4IJ can help incorporate a file's semantic tokens information so that it's readily available and can be used to
+implement specific behavior based on whether an element is a declaration or reference, string or numeric literal,
+comment, etc., based on the reported semantic tokens. This is implemented via a custom `FileViewProviderFactory` and
+`FileViewProvider`. LSP4IJ includes default implementations of these for TextMate files which otherwise lack PSI element
+structure, and it provides a simple way for other file types to gain access to the same features.
+
+#### LSPSemanticTokensFileViewProviderFactory
+
+Most files use a `SingleRootFileViewProvider`, and those that do can use `LSPSemanticTokensFileViewProviderFactory`.
+If specialized behavior is needed, `LSPSemanticTokensFileViewProviderFactory` subclassed and and implemented.
+
+If the custom LSP integration's files are based on a specific language ID, the factory should be registered in 
+`plugin.xml` using `language.fileViewProviderFactory`. It its files are not based on specific language ID, it should be
+registered using `fileType.fileViewProviderFactory`.
+
+#### LSPSemanticTokensFileViewProvider
+
+Most files use a `SingleRootFileViewProvider`, and those that do can use `LSPSemanticTokensSingleRootFileViewProvider`.
+If specialized behavior is needed, it can also be subclassed.
+
+Files that use a more complex file view provider should subclass that view provider, implement the
+`LSPSemanticTokensFileViewProvider` interface, create a `LSPSemanticTokensFileViewProviderHelper` member variable,
+and delegate the methods in the `LSPSemanticTokensFileViewProvider` interface to the helper.
+
+#### Declaration Elements
+
+If the JetBrains IDE can determine that an element is a _declaration_, it provides certain standard features, e.g.,
+the **Go To Declarations or Usages** action automatically shows usages of the declaration. It is therefore important
+that custom LSP integrations help the IDE determine which elements are declarations. The IDE uses the interface
+`PsiNameIdentifierOwner` and its method `getNameIdentifier()` to determine this. As a result, custom LSP integrations
+with PSI element hierarchies should ensure that the PSI element type that is used for declarations -- even if it's also
+used for non-declarations -- implement that interface and return a non-`null` PSI element from `getNameIdentifier()` for
+declaration elements.
+
+Custom LSP integrations that use a semantic tokens-based file view provider as described above can determine whether or
+not a given semantic token-backed element is a declaration or definition as follows:
+
+```java
+LSPSemanticTokensFileViewProvider fileViewProvider = LSPSemanticTokensFileViewProvider.getInstance(element);
+boolean isDeclaration = (fileViewProvider != null) && fileViewProvider.isDeclaration(element.getTextOffset());
+```
+
+When an element is determined to be for a declaration, `getNameIdentifier()` should return either that entire element
+or, if appropriate, its child/descendant element that represents the declaration's name identifier.
+
 ## LSP SignatureHelp Feature
 
 | API                               | Description                                                                                                                                                                                                                        | Default Behaviour           |
