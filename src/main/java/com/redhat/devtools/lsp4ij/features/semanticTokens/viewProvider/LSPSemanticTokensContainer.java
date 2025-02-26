@@ -139,4 +139,12 @@ interface LSPSemanticTokensContainer {
     void addSemanticToken(@NotNull TextRange textRange,
                           @Nullable String tokenType,
                           @Nullable List<String> tokenModifiers);
+
+    /**
+     * Returns the effective offset for the provided element.
+     *
+     * @param element the element
+     * @return the element's effective offset or -1 if none is available
+     */
+    int getEffectiveOffset(@NotNull PsiElement element);
 }
