@@ -70,18 +70,6 @@ public class LSPSemanticTokensFileViewProviderHelper implements LSPSemanticToken
     }
 
     @Override
-    public boolean isDeclaration(int offset) {
-        LSPSemanticToken semanticToken = getSemanticToken(offset);
-        return (semanticToken != null) && (semanticToken.getElementType() == LSPSemanticTokenElementType.DECLARATION);
-    }
-
-    @Override
-    public boolean isReference(int offset) {
-        LSPSemanticToken semanticToken = getSemanticToken(offset);
-        return (semanticToken != null) && (semanticToken.getElementType() == LSPSemanticTokenElementType.REFERENCE);
-    }
-
-    @Override
     public boolean isStringLiteral(int offset) {
         LSPSemanticToken semanticToken = getSemanticToken(offset);
         return (semanticToken != null) && (semanticToken.getElementType() == LSPSemanticTokenElementType.STRING);
@@ -103,6 +91,18 @@ public class LSPSemanticTokensFileViewProviderHelper implements LSPSemanticToken
     public boolean isComment(int offset) {
         LSPSemanticToken semanticToken = getSemanticToken(offset);
         return (semanticToken != null) && (semanticToken.getElementType() == LSPSemanticTokenElementType.COMMENT);
+    }
+
+    @Override
+    public boolean isDeclaration(int offset) {
+        LSPSemanticToken semanticToken = getSemanticToken(offset);
+        return (semanticToken != null) && (semanticToken.getElementType() == LSPSemanticTokenElementType.DECLARATION);
+    }
+
+    @Override
+    public boolean isReference(int offset) {
+        LSPSemanticToken semanticToken = getSemanticToken(offset);
+        return (semanticToken != null) && (semanticToken.getElementType() == LSPSemanticTokenElementType.REFERENCE);
     }
 
     @Override
