@@ -33,11 +33,21 @@ import org.jetbrains.annotations.Nullable;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Utility class for working with document symbols.
+ */
 final class LSPDocumentSymbolUtils {
+
     private LSPDocumentSymbolUtils() {
         // Pure utility class
     }
 
+    /**
+     * Returns the structure view model for the provided element.
+     *
+     * @param element the element
+     * @return the structure view model for the element, or null if none was found
+     */
     @Nullable
     static LSPDocumentSymbolStructureViewModel getStructureViewModel(@NotNull PsiElement element) {
         Editor editor = LSPIJUtils.editorForElement(element);
@@ -49,6 +59,12 @@ final class LSPDocumentSymbolUtils {
         return null;
     }
 
+    /**
+     * Returns the closest containing document symbol data for the element.
+     *
+     * @param element the element
+     * @return the closest containing document symbol data, or null if none was found
+     */
     @Nullable
     static DocumentSymbolData getDocumentSymbolData(@NotNull PsiElement element) {
         LSPSemanticTokensFileViewProvider semanticTokensFileViewProvider = LSPSemanticTokensFileViewProvider.getInstance(element);
@@ -67,6 +83,7 @@ final class LSPDocumentSymbolUtils {
         if (structureViewModel != null) {
             PsiFile file = element.getContainingFile();
             List<DocumentSymbolData> containingDocumentSymbolDatas = getContainingDocumentSymbolDatas(file, structureViewModel.getRoot(), offset);
+            // Breadth-first search, so the last one is the closest one
             return ContainerUtil.getLastItem(containingDocumentSymbolDatas);
         }
 
@@ -78,23 +95,33 @@ final class LSPDocumentSymbolUtils {
                                                                              @NotNull StructureViewTreeElement structureViewTreeElement,
                                                                              int offset) {
         List<DocumentSymbolData> containingDocumentSymbolDatas = new LinkedList<>();
+
+        // If this is file-level, collect its children/descendants
         if (structureViewTreeElement instanceof LSPFileStructureViewElement fileStructureViewElement) {
             for (StructureViewTreeElement child : fileStructureViewElement.getChildren()) {
                 ContainerUtil.addAllNotNull(containingDocumentSymbolDatas, getContainingDocumentSymbolDatas(file, child, offset));
             }
-        } else if (structureViewTreeElement instanceof LSPDocumentSymbolViewElement documentSymbolViewElement) {
+        }
+
+        // Otherwise add document symbol datas that contain the offset in a breadth-first manner so that the last one is
+        // the closest one for the offset
+        else if (structureViewTreeElement instanceof LSPDocumentSymbolViewElement documentSymbolViewElement) {
             DocumentSymbolData documentSymbolData = documentSymbolViewElement.getElement();
             DocumentSymbol documentSymbol = documentSymbolData != null ? documentSymbolData.getDocumentSymbol() : null;
             Range documentSymbolRange = documentSymbol != null ? documentSymbol.getRange() : null;
             Document document = documentSymbolRange != null ? LSPIJUtils.getDocument(file) : null;
             TextRange textRange = document != null ? LSPIJUtils.toTextRange(documentSymbolRange, document) : null;
             if ((textRange != null) && textRange.containsOffset(offset)) {
+                // Add this one
                 containingDocumentSymbolDatas.add(documentSymbolData);
-            }
-            for (StructureViewTreeElement child : documentSymbolViewElement.getChildren()) {
-                ContainerUtil.addAllNotNull(containingDocumentSymbolDatas, getContainingDocumentSymbolDatas(file, child, offset));
+
+                // And all children/descendants that also contain the offset
+                for (StructureViewTreeElement child : documentSymbolViewElement.getChildren()) {
+                    ContainerUtil.addAllNotNull(containingDocumentSymbolDatas, getContainingDocumentSymbolDatas(file, child, offset));
+                }
             }
         }
+
         return containingDocumentSymbolDatas;
     }
 }

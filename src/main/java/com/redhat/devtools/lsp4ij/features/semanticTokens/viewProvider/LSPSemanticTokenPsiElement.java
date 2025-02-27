@@ -44,7 +44,12 @@ public class LSPSemanticTokenPsiElement extends LSPPsiElement implements PsiName
         this.semanticToken = semanticToken;
     }
 
-    int getEffectiveTextOffset() {
+    /**
+     * Returns the effective offset for the element.
+     *
+     * @return the element's effective offset
+     */
+    int getEffectiveOffset() {
         int lastRequestedOffset = semanticToken.getLastRequestedOffset();
         return lastRequestedOffset > -1 ? lastRequestedOffset : getTextOffset();
     }

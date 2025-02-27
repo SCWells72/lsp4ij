@@ -178,7 +178,7 @@ public class LSPSemanticTokensFileViewProviderHelper implements LSPSemanticToken
         Map<Integer, LSPSemanticToken> semanticTokensByOffset = getSemanticTokensByOffset();
         if (!ContainerUtil.isEmpty(semanticTokensByOffset)) {
             LSPSemanticToken semanticToken = semanticTokensByOffset.get(offset);
-            // Update the view provider's effective requested offset as appropriate
+            // Update the view provider's effective offset as appropriate
             setEffectiveOffset(semanticToken == null ? offset : -1);
             return semanticToken;
         }
@@ -214,14 +214,14 @@ public class LSPSemanticTokensFileViewProviderHelper implements LSPSemanticToken
         if (file != null) {
             int effectiveOffset = -1;
 
-            // First try to get it from the element; this will generally be for a TextMate file with no semantic tokens
+            // First try to get it from the element; this will generally be for a file with no semantic tokens
             if ((element instanceof LSPSemanticTokenPsiElement semanticTokenElement) &&
-                (element.getContainingFile().getViewProvider() == this)) {
-                effectiveOffset = semanticTokenElement.getEffectiveTextOffset();
+                (element.getContainingFile().getViewProvider() == fileViewProvider)) {
+                effectiveOffset = semanticTokenElement.getEffectiveOffset();
             }
 
-            // Failing that, try to get it from the view provider; this will generally for a TextMate file with semantic
-            // tokens but the provided element doesn't correspond to one
+            // Failing that, try to get it from the view provider; this will generally for a file with semantic tokens
+            // but the provided element doesn't correspond to one
             Integer viewProviderEffectiveOffset = effectiveOffsetPtr.get();
             if (viewProviderEffectiveOffset != null) {
                 effectiveOffset = viewProviderEffectiveOffset;
