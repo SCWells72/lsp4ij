@@ -117,8 +117,8 @@ public class EditorBehaviorFeature {
      * @return true if the document symbols-based breadcrumbs info provider is enabled; otherwise false
      */
     public boolean isEnableDocumentSymbolsBreadcrumbsInfoProvider(@NotNull PsiFile file) {
-        // Default to disabled
-        return false;
+        // Default to enabled
+        return true;
     }
 
     // Utility methods to check the state of these feature flags easily
