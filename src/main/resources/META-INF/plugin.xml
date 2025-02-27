@@ -313,13 +313,11 @@
                 language="textmate"
                 implementationClass="com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolStructureViewFactory"/>
 
-        <!-- Breadcrumbs/sticky lines support for TextMate and abstract file type plain text files -->
+        <!-- Breadcrumbs/sticky lines support using document symbols -->
         <breadcrumbsInfoProvider
                 id="LSPTextMateDocumentSymbolBreadcrumbsInfoProvider"
-                implementation="com.redhat.devtools.lsp4ij.features.documentSymbol.LSPTextMateDocumentSymbolBreadcrumbsInfoProvider"/>
-        <breadcrumbsInfoProvider
-                id="LSPAbstractFileTypeDocumentSymbolBreadcrumbsInfoProvider"
-                implementation="com.redhat.devtools.lsp4ij.features.documentSymbol.LSPAbstractFileTypeDocumentSymbolBreadcrumbsInfoProvider"/>
+                implementation="com.redhat.devtools.lsp4ij.features.documentSymbol.LSPDocumentSymbolBreadcrumbsInfoProvider"
+                order="last"/>
 
         <!-- LSP textDocument/documentHighlight request support -->
         <highlightUsagesHandlerFactory

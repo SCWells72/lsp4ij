@@ -16,7 +16,9 @@ package com.redhat.devtools.lsp4ij.features.documentSymbol;
 
 import com.intellij.ide.structureView.StructureViewTreeElement;
 import com.intellij.lang.Language;
+import com.intellij.lang.LanguageUtil;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Conditions;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -36,30 +38,18 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Abstract base class that can be extended for custom language servers to add document symbol-based breadcrumbs.
- * Concrete subclasses must have a no-arg constructor that specifies the language(s) for the language server's
- * files and must be registered as a <code>breadcrumbsInfoProvider</code> in <code>plugin.xml</code>.
+ * Document symbol-based breadcrumbs info provider.
  */
-public abstract class AbstractLSPDocumentSymbolBreadcrumbsInfoProvider implements BreadcrumbsProvider {
+public class LSPDocumentSymbolBreadcrumbsInfoProvider implements BreadcrumbsProvider {
 
-    private final Language[] languages;
-
-    /**
-     * Creates the document symbol-based breadcrumbs info provider for the specified language(s).
-     *
-     * @param languages the language(s)
-     */
-    protected AbstractLSPDocumentSymbolBreadcrumbsInfoProvider(@NotNull Language... languages) {
-        this.languages = languages;
+    @Override
+    public Language[] getLanguages() {
+        // Register for all languages and filter in isSupported()
+        List<Language> languages = LanguageUtil.getLanguages(Conditions.alwaysTrue());
+        return languages.toArray(Language.EMPTY_ARRAY);
     }
 
-    /**
-     * Determines whether or not this feature is supported for the provided element.
-     *
-     * @param element the element
-     * @return true if the feature is supported, otherwise false
-     */
-    protected boolean isSupported(@NotNull PsiElement element) {
+    private boolean isSupported(@NotNull PsiElement element) {
         Project project = element.getProject();
         PsiFile file = element.getContainingFile();
         VirtualFile virtualFile = file.getVirtualFile();
@@ -72,11 +62,6 @@ public abstract class AbstractLSPDocumentSymbolBreadcrumbsInfoProvider implement
                         // And this feature must be enabled
                         EditorBehaviorFeature.enableDocumentSymbolsBreadcrumbsInfoProvider(file)
         );
-    }
-
-    @Override
-    public Language[] getLanguages() {
-        return languages;
     }
 
     @Override
