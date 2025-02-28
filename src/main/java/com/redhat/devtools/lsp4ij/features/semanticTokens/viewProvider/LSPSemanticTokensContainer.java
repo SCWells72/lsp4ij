@@ -12,6 +12,7 @@
 package com.redhat.devtools.lsp4ij.features.semanticTokens.viewProvider;
 
 import com.intellij.openapi.util.TextRange;
+import com.intellij.psi.PsiElement;
 import com.intellij.util.ThreeState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
