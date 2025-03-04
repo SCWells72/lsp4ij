@@ -29,6 +29,18 @@ public class DefaultSemanticTokensColorsProvider implements SemanticTokensColors
     public @Nullable TextAttributesKey getTextAttributesKey(@NotNull String tokenType,
                                                             @NotNull List<String> tokenModifiers,
                                                             @NotNull PsiFile file) {
+        LSPSemanticTokenType lspSemanticTokenType = LSPSemanticTokenTypes.valueOf(tokenType);
+        if (lspSemanticTokenType != null) {
+            // If this is for a custom semantic token type that expresses an inheritance relationship, swap it out now
+            if (lspSemanticTokenType.inheritFrom != null) {
+                tokenType = lspSemanticTokenType.inheritFrom;
+            }
+            // If it's for one that has a specific text attributes key, use it
+            else if (lspSemanticTokenType.textAttributesKey != null) {
+                return TextAttributesKey.find(lspSemanticTokenType.textAttributesKey);
+            }
+        }
+
         switch (tokenType) {
 
             // namespace: for identifiers that declare or reference a namespace, module, or package.
