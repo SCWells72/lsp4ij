@@ -91,7 +91,7 @@ public abstract class LSPServerSideOnTypeFormattingFixtureTestCase extends LSPCo
         List<LanguageServerItem> languageServers = new LinkedList<>();
         try {
             ContainerUtil.addAllNotNull(languageServers, LanguageServiceAccessor.getInstance(project)
-                    .getLanguageServers(file.getVirtualFile(), null, null)
+                    .getLanguageServers(file, null, null)
                     .get(5000, TimeUnit.MILLISECONDS));
         } catch (Exception e) {
             fail(e.getMessage());
@@ -119,6 +119,9 @@ public abstract class LSPServerSideOnTypeFormattingFixtureTestCase extends LSPCo
             ClientConfigurationSettings clientConfiguration = configurableLanguageServerDefinition.getLanguageServerClientConfiguration();
             assertNotNull(clientConfiguration);
             clientConfigCustomizer.accept(clientConfiguration);
+
+            // Bump the modification count since we changed settings directly
+            languageServer.getServerWrapper().incrementModificationCount();
         }
 
         EditorTestUtil.buildInitialFoldingsInBackground(editor);

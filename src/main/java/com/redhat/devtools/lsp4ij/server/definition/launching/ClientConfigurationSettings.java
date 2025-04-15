@@ -103,7 +103,7 @@ public class ClientConfigurationSettings {
          * The specific close brace characters that should trigger client-side on-type formatting. Defaults to the
          * language's close brace characters.
          */
-        public String formatOnCloseBraceCharacters = null;
+        public String formatOnCloseBraceCharacters = "";
 
         /**
          * The scope that should be formatted using client-side on-type formatting when a close brace is typed. Allowed
@@ -139,7 +139,7 @@ public class ClientConfigurationSettings {
          * The specific completion trigger characters that should trigger client-side on-type formatting. Defaults to
          * the language's completion trigger characters.
          */
-        public String formatOnCompletionTriggerCharacters = null;
+        public String formatOnCompletionTriggerCharacters = "";
     }
 
     /**
@@ -165,6 +165,16 @@ public class ClientConfigurationSettings {
          * On-type formatting settings
          */
         public @NotNull OnTypeFormattingSettings onTypeFormatting = new OnTypeFormattingSettings();
+    }
+
+    /**
+     * Client-side references settings.
+     */
+    public static class ClientConfigurationReferencesSettings {
+        /**
+         * Whether or not client-side external references should be processed.
+         */
+        public boolean processExternalReferences = false;
     }
 
     /**
@@ -221,6 +231,11 @@ public class ClientConfigurationSettings {
      * Client-side format settings.
      */
     public @NotNull ClientConfigurationFormatSettings format = new ClientConfigurationFormatSettings();
+
+    /**
+     * Client-side references settings.
+     */
+    public @NotNull ClientConfigurationReferencesSettings references = new ClientConfigurationReferencesSettings();
 
     /**
      * Client-side workspace symbol settings.

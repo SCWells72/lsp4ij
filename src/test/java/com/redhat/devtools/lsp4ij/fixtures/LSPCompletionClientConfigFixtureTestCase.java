@@ -89,7 +89,7 @@ public abstract class LSPCompletionClientConfigFixtureTestCase extends LSPCodeIn
         List<LanguageServerItem> languageServers = new LinkedList<>();
         try {
             ContainerUtil.addAllNotNull(languageServers, LanguageServiceAccessor.getInstance(project)
-                    .getLanguageServers(file.getVirtualFile(), null, null)
+                    .getLanguageServers(file, null, null)
                     .get(5000, TimeUnit.MILLISECONDS));
         } catch (Exception e) {
             fail(e.getMessage());
@@ -114,6 +114,9 @@ public abstract class LSPCompletionClientConfigFixtureTestCase extends LSPCodeIn
             ClientConfigurationSettings clientConfiguration = configurableLanguageServerDefinition.getLanguageServerClientConfiguration();
             assertNotNull(clientConfiguration);
             clientConfigCustomizer.accept(clientConfiguration);
+
+            // Bump the modification count since we changed settings directly
+            languageServer.getServerWrapper().incrementModificationCount();
         }
 
         // Move to the offset at which completion should be triggered

@@ -79,7 +79,9 @@ public abstract class AbstractLSPFormattingService extends AsyncDocumentFormatti
             Editor[] editors = LSPIJUtils.editorsForFile(psiFile.getVirtualFile(), psiFile.getProject());
             Editor editor = editors.length > 0 ? editors[0] : null;
             Document document = editor != null ? editor.getDocument() : LSPIJUtils.getDocument(psiFile.getVirtualFile());
-            formattingSupport.format(document, editor, formattingRange, formattingRequest);
+            if (document != null) {
+                formattingSupport.format(document, editor, formattingRange, formattingRequest);
+            }
         }
 
         @Override
@@ -115,7 +117,7 @@ public abstract class AbstractLSPFormattingService extends AsyncDocumentFormatti
         }
         Project project = file.getProject();
         return LanguageServiceAccessor.getInstance(project)
-                .hasAny(file.getVirtualFile(), ls -> canSupportFormatting(ls, file));
+                .hasAny(file, ls -> canSupportFormatting(ls, file));
     }
 
     private boolean canSupportFormatting(LanguageServerWrapper ls, PsiFile file) {

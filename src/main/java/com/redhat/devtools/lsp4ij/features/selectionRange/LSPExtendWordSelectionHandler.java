@@ -14,11 +14,9 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.util.containers.ContainerUtil;
-import com.redhat.devtools.lsp4ij.LSPIJUtils;
 import com.redhat.devtools.lsp4ij.LanguageServiceAccessor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -29,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.intellij.codeInsight.editorActions.ExtendWordSelectionHandlerBase.expandToWholeLinesWithBlanks;
+import static com.redhat.devtools.lsp4ij.features.selectionRange.LSPSelectionRangeSupport.isSelectionRangesAvailable;
 
 /**
  * Implementation of the IDE's extendWordSelectionHandler EP for LSP4IJ files against textDocument/selectionRange.
@@ -44,12 +43,11 @@ public class LSPExtendWordSelectionHandler extends AbstractLSPExtendWordSelectio
         // These should all be safely non-null now
         Project project = element.getProject();
         PsiFile file = element.getContainingFile();
-        VirtualFile virtualFile = LSPIJUtils.getFile(element);
 
         // Only if textDocument/selectionRange is supported for the file
         //noinspection DataFlowIssue
         return LanguageServiceAccessor.getInstance(project)
-                .hasAny(virtualFile, ls -> ls.getClientFeatures().getSelectionRangeFeature().isSelectionRangeSupported(file));
+                .hasAny(file, ls -> ls.getClientFeatures().getSelectionRangeFeature().isSelectionRangeSupported(file));
     }
 
     @Override
@@ -60,6 +58,11 @@ public class LSPExtendWordSelectionHandler extends AbstractLSPExtendWordSelectio
                                   @NotNull Editor editor) {
         PsiFile file = element.getContainingFile();
         if (file == null) {
+            return null;
+        }
+
+        // Check if it exists a started language server which support LSP selectionRange
+        if (!isSelectionRangesAvailable(file)) {
             return null;
         }
 
